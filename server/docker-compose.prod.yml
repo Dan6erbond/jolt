@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: "traefik:v2.9"
+    container_name: "traefik"
+    command:
+      #- "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.ravianand.acme.tlschallenge=true"
+      - "--certificatesresolvers.ravianand.acme.caserver=${ACME_CASERVER:-}"
+      - "--certificatesresolvers.ravianand.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.ravianand.acme.storage=${ACME_STORAGE:-/letsencrypt/acme.json}"
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      GO_ENV: production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jamboree.rule=Host(`go-gqlgen-fx.ravianand.me`)"
+      - "traefik.http.routers.jamboree.entrypoints=websecure"
+      - "traefik.http.routers.jamboree.tls.certresolver=ravianand"
+    depends_on:
+      - db
