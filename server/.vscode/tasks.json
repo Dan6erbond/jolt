@@ -1,0 +1,14 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Add Workspace Folder to Git Safe Locations",
+      "type": "shell",
+      "command": "git config --global --add safe.directory /workspace",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
