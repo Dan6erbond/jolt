@@ -1,0 +1,14 @@
+{
+    "name": "Jolt: The Social Hub for your Home Media Server",
+    "short_name": "Jolt",
+    "icons": [
+        {
+            "src": "/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#628acd",
+    "background_color": "#23252e",
+    "display": "standalone"
+}
