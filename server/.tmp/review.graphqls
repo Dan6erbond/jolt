@@ -1,0 +1,6 @@
+""" type Review {
+  author: User!
+  review: String!
+  bolts: [Bolt!]!
+}
+ """

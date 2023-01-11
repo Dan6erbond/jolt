@@ -1,0 +1,24 @@
+type Movie {
+  id: ID!
+  tmdbId: ID!
+  rating: Float!
+}
+
+type MovieRating {
+  movie: Movie!
+  rating: Float!
+  createdBy: User!
+}
+
+type MovieReview {
+  movie: Movie!
+  review: String!
+  upbolts: Int!
+  upboltedByCurrentUser: Boolean! @loggedIn
+  createdBy: User!
+}
+
+extend type Mutation {
+  rateMovie(tmdbId: ID!, rating: Float!): MovieRating! @loggedIn
+  reviewMovie(tmdbId: ID!, review: String!): MovieReview! @loggedIn
+}

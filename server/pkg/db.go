@@ -35,7 +35,12 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 		OnStart: func(context.Context) error {
 			logger.Info("Migrating models")
 			db.AutoMigrate(&models.User{})
-			db.AutoMigrate(&models.Todo{})
+			db.AutoMigrate(&models.RefreshToken{})
+			db.AutoMigrate(&models.Movie{})
+			db.AutoMigrate(&models.MovieRating{})
+			db.AutoMigrate(&models.MovieReview{})
+			db.AutoMigrate(&models.Watchlist{})
+			db.AutoMigrate(&models.Recommendation{})
 			return nil
 		},
 	})

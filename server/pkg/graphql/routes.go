@@ -7,11 +7,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/dan6erbond/jolt-server/graph"
 )
 
-func RegisterRoutes(router *mux.Router, resolver *graph.Resolver, logger *zap.Logger) {
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
+func RegisterRoutes(router *mux.Router, config generated.Config, logger *zap.Logger) {
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(config))
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/graphql")).Methods("GET", "POST", "OPTIONS")
 	router.Handle("/graphql", srv).Methods("GET", "POST", "OPTIONS")
