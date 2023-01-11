@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/go-postgres
 {
-  "name": "Jamboree API Devcontainer",
+  "name": "Jolt API Devcontainer",
   "dockerComposeFile": [
     "../docker-compose.yml",
     "docker-compose.yml"
@@ -25,7 +25,10 @@
 		"vivaxy.vscode-conventional-commits",
 		"GraphQL.vscode-graphql",
 		"redhat.vscode-yaml",
-		"GitHub.vscode-pull-request-github"
+		"GitHub.vscode-pull-request-github",
+		"quicktype.quicktype",
+		"ricardoerikson.vscode-go-impl-methods",
+		"esbenp.prettier-vscode"
 	]
     }
   },
