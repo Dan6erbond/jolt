@@ -5,3 +5,11 @@
 type Query
 
 type Mutation
+
+enum MediaType {
+  MOVIE
+  TV
+}
+
+union Media = Movie
+# union Post = Review

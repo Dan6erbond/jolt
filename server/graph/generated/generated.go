@@ -37,50 +37,110 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Movie() MovieResolver
+	MovieReview() MovieReviewResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
-	Todo() TodoResolver
+	Recommendation() RecommendationResolver
 	User() UserResolver
 }
 
 type DirectiveRoot struct {
+	LoggedIn func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
+	Movie struct {
+		ID     func(childComplexity int) int
+		Rating func(childComplexity int) int
+		TmdbID func(childComplexity int) int
+	}
+
+	MovieRating struct {
+		CreatedBy func(childComplexity int) int
+		Movie     func(childComplexity int) int
+		Rating    func(childComplexity int) int
+	}
+
+	MovieReview struct {
+		CreatedBy             func(childComplexity int) int
+		Movie                 func(childComplexity int) int
+		Review                func(childComplexity int) int
+		UpboltedByCurrentUser func(childComplexity int) int
+		Upbolts               func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateTodo func(childComplexity int, input model.NewTodo) int
+		AddToWatchlist       func(childComplexity int, input model.AddToWatchlistInput) int
+		CreateRecommendation func(childComplexity int, input model.CreateRecommendationInput) int
+		RateMovie            func(childComplexity int, tmdbID string, rating float64) int
+		RefreshTokens        func(childComplexity int, refreshToken string) int
+		ReviewMovie          func(childComplexity int, tmdbID string, review string) int
+		SignInWithJellyfin   func(childComplexity int, input model.SignInWithJellyfinInput) int
 	}
 
 	Query struct {
-		Todos func(childComplexity int) int
+		Me func(childComplexity int) int
 	}
 
-	Todo struct {
-		Done func(childComplexity int) int
-		ID   func(childComplexity int) int
-		Text func(childComplexity int) int
-		User func(childComplexity int) int
+	Recommendation struct {
+		Media             func(childComplexity int) int
+		Message           func(childComplexity int) int
+		RecommendationFor func(childComplexity int) int
+		RecommendedBy     func(childComplexity int) int
+	}
+
+	RefreshTokenResult struct {
+		AccessToken  func(childComplexity int) int
+		RefreshToken func(childComplexity int) int
+	}
+
+	SignInResult struct {
+		AccessToken  func(childComplexity int) int
+		RefreshToken func(childComplexity int) int
 	}
 
 	User struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		Name                   func(childComplexity int) int
+		Recommendations        func(childComplexity int) int
+		RecommendationsCreated func(childComplexity int) int
+		Watchlist              func(childComplexity int) int
 	}
 }
 
+type MovieResolver interface {
+	ID(ctx context.Context, obj *models.Movie) (string, error)
+
+	Rating(ctx context.Context, obj *models.Movie) (float64, error)
+}
+type MovieReviewResolver interface {
+	Upbolts(ctx context.Context, obj *models.MovieReview) (int, error)
+	UpboltedByCurrentUser(ctx context.Context, obj *models.MovieReview) (bool, error)
+}
 type MutationResolver interface {
-	CreateTodo(ctx context.Context, input model.NewTodo) (*models.Todo, error)
+	SignInWithJellyfin(ctx context.Context, input model.SignInWithJellyfinInput) (*model.SignInResult, error)
+	RefreshTokens(ctx context.Context, refreshToken string) (*model.RefreshTokenResult, error)
+	RateMovie(ctx context.Context, tmdbID string, rating float64) (*models.MovieRating, error)
+	ReviewMovie(ctx context.Context, tmdbID string, review string) (*models.MovieReview, error)
+	CreateRecommendation(ctx context.Context, input model.CreateRecommendationInput) (*models.Recommendation, error)
+	AddToWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error)
 }
 type QueryResolver interface {
-	Todos(ctx context.Context) ([]*models.Todo, error)
+	Me(ctx context.Context) (*models.User, error)
 }
-type TodoResolver interface {
-	ID(ctx context.Context, obj *models.Todo) (string, error)
+type RecommendationResolver interface {
+	Media(ctx context.Context, obj *models.Recommendation) (model.Media, error)
+	RecommendedBy(ctx context.Context, obj *models.Recommendation) (*models.User, error)
 
-	User(ctx context.Context, obj *models.Todo) (*models.User, error)
+	RecommendationFor(ctx context.Context, obj *models.Recommendation) (*models.User, error)
 }
 type UserResolver interface {
 	ID(ctx context.Context, obj *models.User) (string, error)
+
+	Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error)
+	Recommendations(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
+	RecommendationsCreated(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
 }
 
 type executableSchema struct {
@@ -98,52 +158,217 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.createTodo":
-		if e.complexity.Mutation.CreateTodo == nil {
+	case "Movie.id":
+		if e.complexity.Movie.ID == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createTodo_args(context.TODO(), rawArgs)
+		return e.complexity.Movie.ID(childComplexity), true
+
+	case "Movie.rating":
+		if e.complexity.Movie.Rating == nil {
+			break
+		}
+
+		return e.complexity.Movie.Rating(childComplexity), true
+
+	case "Movie.tmdbId":
+		if e.complexity.Movie.TmdbID == nil {
+			break
+		}
+
+		return e.complexity.Movie.TmdbID(childComplexity), true
+
+	case "MovieRating.createdBy":
+		if e.complexity.MovieRating.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.MovieRating.CreatedBy(childComplexity), true
+
+	case "MovieRating.movie":
+		if e.complexity.MovieRating.Movie == nil {
+			break
+		}
+
+		return e.complexity.MovieRating.Movie(childComplexity), true
+
+	case "MovieRating.rating":
+		if e.complexity.MovieRating.Rating == nil {
+			break
+		}
+
+		return e.complexity.MovieRating.Rating(childComplexity), true
+
+	case "MovieReview.createdBy":
+		if e.complexity.MovieReview.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.CreatedBy(childComplexity), true
+
+	case "MovieReview.movie":
+		if e.complexity.MovieReview.Movie == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Movie(childComplexity), true
+
+	case "MovieReview.review":
+		if e.complexity.MovieReview.Review == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Review(childComplexity), true
+
+	case "MovieReview.upboltedByCurrentUser":
+		if e.complexity.MovieReview.UpboltedByCurrentUser == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.UpboltedByCurrentUser(childComplexity), true
+
+	case "MovieReview.upbolts":
+		if e.complexity.MovieReview.Upbolts == nil {
+			break
+		}
+
+		return e.complexity.MovieReview.Upbolts(childComplexity), true
+
+	case "Mutation.addToWatchlist":
+		if e.complexity.Mutation.AddToWatchlist == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addToWatchlist_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(model.NewTodo)), true
+		return e.complexity.Mutation.AddToWatchlist(childComplexity, args["input"].(model.AddToWatchlistInput)), true
 
-	case "Query.todos":
-		if e.complexity.Query.Todos == nil {
+	case "Mutation.createRecommendation":
+		if e.complexity.Mutation.CreateRecommendation == nil {
 			break
 		}
 
-		return e.complexity.Query.Todos(childComplexity), true
+		args, err := ec.field_Mutation_createRecommendation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.done":
-		if e.complexity.Todo.Done == nil {
+		return e.complexity.Mutation.CreateRecommendation(childComplexity, args["input"].(model.CreateRecommendationInput)), true
+
+	case "Mutation.rateMovie":
+		if e.complexity.Mutation.RateMovie == nil {
 			break
 		}
 
-		return e.complexity.Todo.Done(childComplexity), true
+		args, err := ec.field_Mutation_rateMovie_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.id":
-		if e.complexity.Todo.ID == nil {
+		return e.complexity.Mutation.RateMovie(childComplexity, args["tmdbId"].(string), args["rating"].(float64)), true
+
+	case "Mutation.refreshTokens":
+		if e.complexity.Mutation.RefreshTokens == nil {
 			break
 		}
 
-		return e.complexity.Todo.ID(childComplexity), true
+		args, err := ec.field_Mutation_refreshTokens_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.text":
-		if e.complexity.Todo.Text == nil {
+		return e.complexity.Mutation.RefreshTokens(childComplexity, args["refreshToken"].(string)), true
+
+	case "Mutation.reviewMovie":
+		if e.complexity.Mutation.ReviewMovie == nil {
 			break
 		}
 
-		return e.complexity.Todo.Text(childComplexity), true
+		args, err := ec.field_Mutation_reviewMovie_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.user":
-		if e.complexity.Todo.User == nil {
+		return e.complexity.Mutation.ReviewMovie(childComplexity, args["tmdbId"].(string), args["review"].(string)), true
+
+	case "Mutation.signInWithJellyfin":
+		if e.complexity.Mutation.SignInWithJellyfin == nil {
 			break
 		}
 
-		return e.complexity.Todo.User(childComplexity), true
+		args, err := ec.field_Mutation_signInWithJellyfin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SignInWithJellyfin(childComplexity, args["input"].(model.SignInWithJellyfinInput)), true
+
+	case "Query.me":
+		if e.complexity.Query.Me == nil {
+			break
+		}
+
+		return e.complexity.Query.Me(childComplexity), true
+
+	case "Recommendation.media":
+		if e.complexity.Recommendation.Media == nil {
+			break
+		}
+
+		return e.complexity.Recommendation.Media(childComplexity), true
+
+	case "Recommendation.message":
+		if e.complexity.Recommendation.Message == nil {
+			break
+		}
+
+		return e.complexity.Recommendation.Message(childComplexity), true
+
+	case "Recommendation.recommendationFor":
+		if e.complexity.Recommendation.RecommendationFor == nil {
+			break
+		}
+
+		return e.complexity.Recommendation.RecommendationFor(childComplexity), true
+
+	case "Recommendation.recommendedBy":
+		if e.complexity.Recommendation.RecommendedBy == nil {
+			break
+		}
+
+		return e.complexity.Recommendation.RecommendedBy(childComplexity), true
+
+	case "RefreshTokenResult.accessToken":
+		if e.complexity.RefreshTokenResult.AccessToken == nil {
+			break
+		}
+
+		return e.complexity.RefreshTokenResult.AccessToken(childComplexity), true
+
+	case "RefreshTokenResult.refreshToken":
+		if e.complexity.RefreshTokenResult.RefreshToken == nil {
+			break
+		}
+
+		return e.complexity.RefreshTokenResult.RefreshToken(childComplexity), true
+
+	case "SignInResult.accessToken":
+		if e.complexity.SignInResult.AccessToken == nil {
+			break
+		}
+
+		return e.complexity.SignInResult.AccessToken(childComplexity), true
+
+	case "SignInResult.refreshToken":
+		if e.complexity.SignInResult.RefreshToken == nil {
+			break
+		}
+
+		return e.complexity.SignInResult.RefreshToken(childComplexity), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -159,6 +384,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Name(childComplexity), true
 
+	case "User.recommendations":
+		if e.complexity.User.Recommendations == nil {
+			break
+		}
+
+		return e.complexity.User.Recommendations(childComplexity), true
+
+	case "User.recommendationsCreated":
+		if e.complexity.User.RecommendationsCreated == nil {
+			break
+		}
+
+		return e.complexity.User.RecommendationsCreated(childComplexity), true
+
+	case "User.watchlist":
+		if e.complexity.User.Watchlist == nil {
+			break
+		}
+
+		return e.complexity.User.Watchlist(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -167,7 +413,9 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputNewTodo,
+		ec.unmarshalInputAddToWatchlistInput,
+		ec.unmarshalInputCreateRecommendationInput,
+		ec.unmarshalInputSignInWithJellyfinInput,
 	)
 	first := true
 
@@ -228,6 +476,72 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
+	{Name: "../auth.graphqls", Input: `directive @loggedIn on FIELD_DEFINITION
+
+type SignInResult {
+  accessToken: String!
+  refreshToken: String!
+}
+
+type RefreshTokenResult {
+  accessToken: String!
+  refreshToken: String!
+}
+
+input SignInWithJellyfinInput {
+  username: String!
+  password: String!
+}
+
+extend type Mutation {
+  signInWithJellyfin(input: SignInWithJellyfinInput!): SignInResult!
+  refreshTokens(refreshToken: String!): RefreshTokenResult!
+}
+`, BuiltIn: false},
+	{Name: "../movie.graphqls", Input: `type Movie {
+  id: ID!
+  tmdbId: ID!
+  rating: Float!
+}
+
+type MovieRating {
+  movie: Movie!
+  rating: Float!
+  createdBy: User!
+}
+
+type MovieReview {
+  movie: Movie!
+  review: String!
+  upbolts: Int!
+  upboltedByCurrentUser: Boolean! @loggedIn
+  createdBy: User!
+}
+
+extend type Mutation {
+  rateMovie(tmdbId: ID!, rating: Float!): MovieRating! @loggedIn
+  reviewMovie(tmdbId: ID!, review: String!): MovieReview! @loggedIn
+}
+`, BuiltIn: false},
+	{Name: "../recommendation.graphqls", Input: `type Recommendation {
+  media: Media!
+  recommendedBy: User!
+  message: String!
+  recommendationFor: User!
+}
+
+input CreateRecommendationInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+  recommendationForUserId: ID!
+  message: String!
+}
+
+extend type Mutation {
+  createRecommendation(input: CreateRecommendationInput!): Recommendation!
+    @loggedIn
+}
+`, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `# GraphQL schema example
 #
 # https://gqlgen.com/getting-started/
@@ -235,30 +549,34 @@ var sources = []*ast.Source{
 type Query
 
 type Mutation
-`, BuiltIn: false},
-	{Name: "../todo.graphqls", Input: `type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+
+enum MediaType {
+  MOVIE
+  TV
 }
 
-extend type Query {
-  todos: [Todo!]!
-}
-
-input NewTodo {
-  text: String!
-  userId: String!
-}
-
-extend type Mutation {
-  createTodo(input: NewTodo!): Todo!
-}
+union Media = Movie
+# union Post = Review
 `, BuiltIn: false},
 	{Name: "../user.graphqls", Input: `type User {
   id: ID!
   name: String!
+  watchlist: [Media!]!
+  recommendations: [Recommendation!]!
+  recommendationsCreated: [Recommendation!]!
+}
+
+extend type Query {
+  me: User! @loggedIn
+}
+
+input AddToWatchlistInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+}
+
+extend type Mutation {
+  addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
 }
 `, BuiltIn: false},
 }
@@ -268,13 +586,106 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_addToWatchlist_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.NewTodo
+	var arg0 model.AddToWatchlistInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewTodo2githubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋgraphᚋmodelᚐNewTodo(ctx, tmp)
+		arg0, err = ec.unmarshalNAddToWatchlistInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐAddToWatchlistInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createRecommendation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CreateRecommendationInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateRecommendationInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐCreateRecommendationInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_rateMovie_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["tmdbId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tmdbId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tmdbId"] = arg0
+	var arg1 float64
+	if tmp, ok := rawArgs["rating"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rating"))
+		arg1, err = ec.unmarshalNFloat2float64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["rating"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_refreshTokens_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["refreshToken"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshToken"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["refreshToken"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reviewMovie_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["tmdbId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tmdbId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["tmdbId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["review"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("review"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["review"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_signInWithJellyfin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.SignInWithJellyfinInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNSignInWithJellyfinInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInWithJellyfinInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -336,8 +747,8 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_createTodo(ctx, field)
+func (ec *executionContext) _Movie_id(ctx context.Context, field graphql.CollectedField, obj *models.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -350,7 +761,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, fc.Args["input"].(model.NewTodo))
+		return ec.resolvers.Movie().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -362,12 +773,556 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.Todo)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNTodo2ᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodo(ctx, field.Selections, res)
+	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_createTodo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Movie_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_tmdbId(ctx context.Context, field graphql.CollectedField, obj *models.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_tmdbId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TmdbID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_tmdbId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_rating(ctx context.Context, field graphql.CollectedField, obj *models.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_rating(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Movie().Rating(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_rating(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieRating_movie(ctx context.Context, field graphql.CollectedField, obj *models.MovieRating) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieRating_movie(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Movie, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Movie)
+	fc.Result = res
+	return ec.marshalNMovie2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieRating_movie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieRating",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Movie_id(ctx, field)
+			case "tmdbId":
+				return ec.fieldContext_Movie_tmdbId(ctx, field)
+			case "rating":
+				return ec.fieldContext_Movie_rating(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieRating_rating(ctx context.Context, field graphql.CollectedField, obj *models.MovieRating) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieRating_rating(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rating, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieRating_rating(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieRating",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieRating_createdBy(ctx context.Context, field graphql.CollectedField, obj *models.MovieRating) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieRating_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieRating_createdBy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieRating",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_movie(ctx context.Context, field graphql.CollectedField, obj *models.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_movie(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Movie, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Movie)
+	fc.Result = res
+	return ec.marshalNMovie2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_movie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Movie_id(ctx, field)
+			case "tmdbId":
+				return ec.fieldContext_Movie_tmdbId(ctx, field)
+			case "rating":
+				return ec.fieldContext_Movie_rating(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_review(ctx context.Context, field graphql.CollectedField, obj *models.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_review(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Review, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_review(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_upbolts(ctx context.Context, field graphql.CollectedField, obj *models.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_upbolts(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MovieReview().Upbolts(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_upbolts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_upboltedByCurrentUser(ctx context.Context, field graphql.CollectedField, obj *models.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_upboltedByCurrentUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.MovieReview().UpboltedByCurrentUser(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(bool); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_upboltedByCurrentUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MovieReview_createdBy(ctx context.Context, field graphql.CollectedField, obj *models.MovieReview) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MovieReview_createdBy(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MovieReview_createdBy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MovieReview",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_signInWithJellyfin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_signInWithJellyfin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SignInWithJellyfin(rctx, fc.Args["input"].(model.SignInWithJellyfinInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SignInResult)
+	fc.Result = res
+	return ec.marshalNSignInResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_signInWithJellyfin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -375,16 +1330,12 @@ func (ec *executionContext) fieldContext_Mutation_createTodo(ctx context.Context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Todo_id(ctx, field)
-			case "text":
-				return ec.fieldContext_Todo_text(ctx, field)
-			case "done":
-				return ec.fieldContext_Todo_done(ctx, field)
-			case "user":
-				return ec.fieldContext_Todo_user(ctx, field)
+			case "accessToken":
+				return ec.fieldContext_SignInResult_accessToken(ctx, field)
+			case "refreshToken":
+				return ec.fieldContext_SignInResult_refreshToken(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Todo", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type SignInResult", field.Name)
 		},
 	}
 	defer func() {
@@ -394,15 +1345,15 @@ func (ec *executionContext) fieldContext_Mutation_createTodo(ctx context.Context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createTodo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_signInWithJellyfin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_todos(ctx, field)
+func (ec *executionContext) _Mutation_refreshTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_refreshTokens(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -415,7 +1366,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
+		return ec.resolvers.Mutation().RefreshTokens(rctx, fc.Args["refreshToken"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -427,12 +1378,423 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.Todo)
+	res := resTmp.(*model.RefreshTokenResult)
 	fc.Result = res
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodoᚄ(ctx, field.Selections, res)
+	return ec.marshalNRefreshTokenResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐRefreshTokenResult(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_todos(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_refreshTokens(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "accessToken":
+				return ec.fieldContext_RefreshTokenResult_accessToken(ctx, field)
+			case "refreshToken":
+				return ec.fieldContext_RefreshTokenResult_refreshToken(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type RefreshTokenResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_refreshTokens_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_rateMovie(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_rateMovie(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RateMovie(rctx, fc.Args["tmdbId"].(string), fc.Args["rating"].(float64))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.MovieRating); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.MovieRating`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.MovieRating)
+	fc.Result = res
+	return ec.marshalNMovieRating2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieRating(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_rateMovie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "movie":
+				return ec.fieldContext_MovieRating_movie(ctx, field)
+			case "rating":
+				return ec.fieldContext_MovieRating_rating(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_MovieRating_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MovieRating", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rateMovie_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reviewMovie(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_reviewMovie(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ReviewMovie(rctx, fc.Args["tmdbId"].(string), fc.Args["review"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.MovieReview); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.MovieReview`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.MovieReview)
+	fc.Result = res
+	return ec.marshalNMovieReview2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reviewMovie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "movie":
+				return ec.fieldContext_MovieReview_movie(ctx, field)
+			case "review":
+				return ec.fieldContext_MovieReview_review(ctx, field)
+			case "upbolts":
+				return ec.fieldContext_MovieReview_upbolts(ctx, field)
+			case "upboltedByCurrentUser":
+				return ec.fieldContext_MovieReview_upboltedByCurrentUser(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_MovieReview_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MovieReview", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reviewMovie_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createRecommendation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createRecommendation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().CreateRecommendation(rctx, fc.Args["input"].(model.CreateRecommendationInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.Recommendation); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.Recommendation`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Recommendation)
+	fc.Result = res
+	return ec.marshalNRecommendation2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendation(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createRecommendation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_Recommendation_media(ctx, field)
+			case "recommendedBy":
+				return ec.fieldContext_Recommendation_recommendedBy(ctx, field)
+			case "message":
+				return ec.fieldContext_Recommendation_message(ctx, field)
+			case "recommendationFor":
+				return ec.fieldContext_Recommendation_recommendationFor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recommendation", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createRecommendation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_addToWatchlist(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_addToWatchlist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().AddToWatchlist(rctx, fc.Args["input"].(model.AddToWatchlistInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(model.Media); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be github.com/dan6erbond/jolt-server/graph/model.Media`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_addToWatchlist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Media does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_addToWatchlist_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_me(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Me(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.User`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -441,15 +1803,17 @@ func (ec *executionContext) fieldContext_Query_todos(ctx context.Context, field 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Todo_id(ctx, field)
-			case "text":
-				return ec.fieldContext_Todo_text(ctx, field)
-			case "done":
-				return ec.fieldContext_Todo_done(ctx, field)
-			case "user":
-				return ec.fieldContext_Todo_user(ctx, field)
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Todo", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -584,8 +1948,8 @@ func (ec *executionContext) fieldContext_Query___schema(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *models.Todo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Todo_id(ctx, field)
+func (ec *executionContext) _Recommendation_media(ctx context.Context, field graphql.CollectedField, obj *models.Recommendation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Recommendation_media(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -598,7 +1962,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Todo().ID(rctx, obj)
+		return ec.resolvers.Recommendation().Media(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -610,26 +1974,26 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(model.Media)
 	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
+	return ec.marshalNMedia2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Todo_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Recommendation_media(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "Recommendation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
+			return nil, errors.New("field of type Media does not have child fields")
 		},
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *models.Todo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Todo_text(ctx, field)
+func (ec *executionContext) _Recommendation_recommendedBy(ctx context.Context, field graphql.CollectedField, obj *models.Recommendation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Recommendation_recommendedBy(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -642,7 +2006,63 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Text, nil
+		return ec.resolvers.Recommendation().RecommendedBy(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Recommendation_recommendedBy(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Recommendation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Recommendation_message(ctx context.Context, field graphql.CollectedField, obj *models.Recommendation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Recommendation_message(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Message, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -659,9 +2079,9 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Todo_text(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Recommendation_message(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "Recommendation",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -672,8 +2092,8 @@ func (ec *executionContext) fieldContext_Todo_text(ctx context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *models.Todo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Todo_done(ctx, field)
+func (ec *executionContext) _Recommendation_recommendationFor(ctx context.Context, field graphql.CollectedField, obj *models.Recommendation) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Recommendation_recommendationFor(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -686,51 +2106,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Done, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Todo_done(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Todo",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *models.Todo) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Todo_user(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Todo().User(rctx, obj)
+		return ec.resolvers.Recommendation().RecommendationFor(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -744,12 +2120,12 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 	}
 	res := resTmp.(*models.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Todo_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Recommendation_recommendationFor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "Recommendation",
 		Field:      field,
 		IsMethod:   true,
 		IsResolver: true,
@@ -759,8 +2135,190 @@ func (ec *executionContext) fieldContext_Todo_user(ctx context.Context, field gr
 				return ec.fieldContext_User_id(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshTokenResult_accessToken(ctx context.Context, field graphql.CollectedField, obj *model.RefreshTokenResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshTokenResult_accessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AccessToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshTokenResult_accessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshTokenResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RefreshTokenResult_refreshToken(ctx context.Context, field graphql.CollectedField, obj *model.RefreshTokenResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_RefreshTokenResult_refreshToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RefreshToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_RefreshTokenResult_refreshToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RefreshTokenResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SignInResult_accessToken(ctx context.Context, field graphql.CollectedField, obj *model.SignInResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SignInResult_accessToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AccessToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SignInResult_accessToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SignInResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SignInResult_refreshToken(ctx context.Context, field graphql.CollectedField, obj *model.SignInResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SignInResult_refreshToken(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RefreshToken, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SignInResult_refreshToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SignInResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -849,6 +2407,158 @@ func (ec *executionContext) fieldContext_User_name(ctx context.Context, field gr
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_watchlist(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_watchlist(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Watchlist(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_watchlist(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Media does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_recommendations(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_recommendations(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Recommendations(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Recommendation)
+	fc.Result = res
+	return ec.marshalNRecommendation2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_recommendations(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_Recommendation_media(ctx, field)
+			case "recommendedBy":
+				return ec.fieldContext_Recommendation_recommendedBy(ctx, field)
+			case "message":
+				return ec.fieldContext_Recommendation_message(ctx, field)
+			case "recommendationFor":
+				return ec.fieldContext_Recommendation_recommendationFor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recommendation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_recommendationsCreated(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_recommendationsCreated(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().RecommendationsCreated(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Recommendation)
+	fc.Result = res
+	return ec.marshalNRecommendation2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_recommendationsCreated(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_Recommendation_media(ctx, field)
+			case "recommendedBy":
+				return ec.fieldContext_Recommendation_recommendedBy(ctx, field)
+			case "message":
+				return ec.fieldContext_Recommendation_message(ctx, field)
+			case "recommendationFor":
+				return ec.fieldContext_Recommendation_recommendationFor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recommendation", field.Name)
 		},
 	}
 	return fc, nil
@@ -2627,33 +4337,121 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj interface{}) (model.NewTodo, error) {
-	var it model.NewTodo
+func (ec *executionContext) unmarshalInputAddToWatchlistInput(ctx context.Context, obj interface{}) (model.AddToWatchlistInput, error) {
+	var it model.AddToWatchlistInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"text", "userId"}
+	fieldsInOrder := [...]string{"tmdbId", "mediaType"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "text":
+		case "tmdbId":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
-			it.Text, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tmdbId"))
+			it.TmdbID, err = ec.unmarshalNID2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "userId":
+		case "mediaType":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaType"))
+			it.MediaType, err = ec.unmarshalNMediaType2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateRecommendationInput(ctx context.Context, obj interface{}) (model.CreateRecommendationInput, error) {
+	var it model.CreateRecommendationInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tmdbId", "mediaType", "recommendationForUserId", "message"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tmdbId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tmdbId"))
+			it.TmdbID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "mediaType":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaType"))
+			it.MediaType, err = ec.unmarshalNMediaType2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "recommendationForUserId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("recommendationForUserId"))
+			it.RecommendationForUserID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "message":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("message"))
+			it.Message, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSignInWithJellyfinInput(ctx context.Context, obj interface{}) (model.SignInWithJellyfinInput, error) {
+	var it model.SignInWithJellyfinInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"username", "password"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2667,9 +4465,217 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj inter
 
 // region    ************************** interface.gotpl ***************************
 
+func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, obj model.Media) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case models.Movie:
+		return ec._Movie(ctx, sel, &obj)
+	case *models.Movie:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._Movie(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var movieImplementors = []string{"Movie", "Media"}
+
+func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, obj *models.Movie) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, movieImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Movie")
+		case "id":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Movie_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "tmdbId":
+
+			out.Values[i] = ec._Movie_tmdbId(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "rating":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Movie_rating(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var movieRatingImplementors = []string{"MovieRating"}
+
+func (ec *executionContext) _MovieRating(ctx context.Context, sel ast.SelectionSet, obj *models.MovieRating) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, movieRatingImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MovieRating")
+		case "movie":
+
+			out.Values[i] = ec._MovieRating_movie(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "rating":
+
+			out.Values[i] = ec._MovieRating_rating(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdBy":
+
+			out.Values[i] = ec._MovieRating_createdBy(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var movieReviewImplementors = []string{"MovieReview"}
+
+func (ec *executionContext) _MovieReview(ctx context.Context, sel ast.SelectionSet, obj *models.MovieReview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, movieReviewImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MovieReview")
+		case "movie":
+
+			out.Values[i] = ec._MovieReview_movie(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "review":
+
+			out.Values[i] = ec._MovieReview_review(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "upbolts":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MovieReview_upbolts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "upboltedByCurrentUser":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MovieReview_upboltedByCurrentUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "createdBy":
+
+			out.Values[i] = ec._MovieReview_createdBy(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var mutationImplementors = []string{"Mutation"}
 
@@ -2690,10 +4696,55 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createTodo":
+		case "signInWithJellyfin":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createTodo(ctx, field)
+				return ec._Mutation_signInWithJellyfin(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refreshTokens":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_refreshTokens(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "rateMovie":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rateMovie(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "reviewMovie":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reviewMovie(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createRecommendation":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createRecommendation(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "addToWatchlist":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_addToWatchlist(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -2729,7 +4780,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "todos":
+		case "me":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2738,7 +4789,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_todos(ctx, field)
+				res = ec._Query_me(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2775,17 +4826,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var todoImplementors = []string{"Todo"}
+var recommendationImplementors = []string{"Recommendation"}
 
-func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj *models.Todo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, todoImplementors)
+func (ec *executionContext) _Recommendation(ctx context.Context, sel ast.SelectionSet, obj *models.Recommendation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, recommendationImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Todo")
-		case "id":
+			out.Values[i] = graphql.MarshalString("Recommendation")
+		case "media":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2794,7 +4845,7 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Todo_id(ctx, field, obj)
+				res = ec._Recommendation_media(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2805,21 +4856,7 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
-		case "text":
-
-			out.Values[i] = ec._Todo_text(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "done":
-
-			out.Values[i] = ec._Todo_done(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "user":
+		case "recommendedBy":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2828,7 +4865,7 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Todo_user(ctx, field, obj)
+				res = ec._Recommendation_recommendedBy(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2839,6 +4876,103 @@ func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj
 				return innerFunc(ctx)
 
 			})
+		case "message":
+
+			out.Values[i] = ec._Recommendation_message(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "recommendationFor":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Recommendation_recommendationFor(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var refreshTokenResultImplementors = []string{"RefreshTokenResult"}
+
+func (ec *executionContext) _RefreshTokenResult(ctx context.Context, sel ast.SelectionSet, obj *model.RefreshTokenResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, refreshTokenResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RefreshTokenResult")
+		case "accessToken":
+
+			out.Values[i] = ec._RefreshTokenResult_accessToken(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refreshToken":
+
+			out.Values[i] = ec._RefreshTokenResult_refreshToken(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var signInResultImplementors = []string{"SignInResult"}
+
+func (ec *executionContext) _SignInResult(ctx context.Context, sel ast.SelectionSet, obj *model.SignInResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, signInResultImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SignInResult")
+		case "accessToken":
+
+			out.Values[i] = ec._SignInResult_accessToken(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "refreshToken":
+
+			out.Values[i] = ec._SignInResult_refreshToken(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2887,6 +5021,66 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "watchlist":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_watchlist(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "recommendations":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_recommendations(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "recommendationsCreated":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_recommendationsCreated(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3216,6 +5410,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAddToWatchlistInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐAddToWatchlistInput(ctx context.Context, v interface{}) (model.AddToWatchlistInput, error) {
+	res, err := ec.unmarshalInputAddToWatchlistInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3223,6 +5422,41 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interf
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
 	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNCreateRecommendationInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐCreateRecommendationInput(ctx context.Context, v interface{}) (model.CreateRecommendationInput, error) {
+	res, err := ec.unmarshalInputCreateRecommendationInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloatContext(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalNID2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3246,18 +5480,13 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNNewTodo2githubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋgraphᚋmodelᚐNewTodo(ctx context.Context, v interface{}) (model.NewTodo, error) {
-	res, err := ec.unmarshalInputNewTodo(ctx, v)
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3266,11 +5495,17 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTodo2githubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodo(ctx context.Context, sel ast.SelectionSet, v models.Todo) graphql.Marshaler {
-	return ec._Todo(ctx, sel, &v)
+func (ec *executionContext) marshalNMedia2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Media(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Media) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -3294,7 +5529,7 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋdan6erbondᚋgoᚑ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodo(ctx, sel, v[i])
+			ret[i] = ec.marshalNMedia2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMedia(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -3314,21 +5549,159 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋdan6erbondᚋgoᚑ
 	return ret
 }
 
-func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐTodo(ctx context.Context, sel ast.SelectionSet, v *models.Todo) graphql.Marshaler {
+func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaType(ctx context.Context, v interface{}) (model.MediaType, error) {
+	var res model.MediaType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMediaType2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNMovie2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx context.Context, sel ast.SelectionSet, v models.Movie) graphql.Marshaler {
+	return ec._Movie(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMovieRating2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieRating(ctx context.Context, sel ast.SelectionSet, v models.MovieRating) graphql.Marshaler {
+	return ec._MovieRating(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMovieRating2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieRating(ctx context.Context, sel ast.SelectionSet, v *models.MovieRating) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	return ec._Todo(ctx, sel, v)
+	return ec._MovieRating(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
+func (ec *executionContext) marshalNMovieReview2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieReview(ctx context.Context, sel ast.SelectionSet, v models.MovieReview) graphql.Marshaler {
+	return ec._MovieReview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMovieReview2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieReview(ctx context.Context, sel ast.SelectionSet, v *models.MovieReview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MovieReview(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRecommendation2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendation(ctx context.Context, sel ast.SelectionSet, v models.Recommendation) graphql.Marshaler {
+	return ec._Recommendation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRecommendation2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendationᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Recommendation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNRecommendation2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRecommendation2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐRecommendation(ctx context.Context, sel ast.SelectionSet, v *models.Recommendation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Recommendation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNRefreshTokenResult2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐRefreshTokenResult(ctx context.Context, sel ast.SelectionSet, v model.RefreshTokenResult) graphql.Marshaler {
+	return ec._RefreshTokenResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRefreshTokenResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐRefreshTokenResult(ctx context.Context, sel ast.SelectionSet, v *model.RefreshTokenResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RefreshTokenResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSignInResult2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInResult(ctx context.Context, sel ast.SelectionSet, v model.SignInResult) graphql.Marshaler {
+	return ec._SignInResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSignInResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInResult(ctx context.Context, sel ast.SelectionSet, v *model.SignInResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SignInResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSignInWithJellyfinInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInWithJellyfinInput(ctx context.Context, v interface{}) (model.SignInWithJellyfinInput, error) {
+	res, err := ec.unmarshalInputSignInWithJellyfinInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNUser2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋgoᚑgqlgenᚑfxᚑtemplateᚋpkgᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

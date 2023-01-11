@@ -1,0 +1,21 @@
+directive @loggedIn on FIELD_DEFINITION
+
+type SignInResult {
+  accessToken: String!
+  refreshToken: String!
+}
+
+type RefreshTokenResult {
+  accessToken: String!
+  refreshToken: String!
+}
+
+input SignInWithJellyfinInput {
+  username: String!
+  password: String!
+}
+
+extend type Mutation {
+  signInWithJellyfin(input: SignInWithJellyfinInput!): SignInResult!
+  refreshTokens(refreshToken: String!): RefreshTokenResult!
+}

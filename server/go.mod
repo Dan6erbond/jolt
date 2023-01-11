@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/99designs/gqlgen v0.17.20
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/mux v1.8.0
 	github.com/rs/cors v1.8.2
 	github.com/spf13/viper v1.13.0

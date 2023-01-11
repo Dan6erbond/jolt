@@ -1,0 +1,18 @@
+type Recommendation {
+  media: Media!
+  recommendedBy: User!
+  message: String!
+  recommendationFor: User!
+}
+
+input CreateRecommendationInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+  recommendationForUserId: ID!
+  message: String!
+}
+
+extend type Mutation {
+  createRecommendation(input: CreateRecommendationInput!): Recommendation!
+    @loggedIn
+}

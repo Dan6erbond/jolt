@@ -24,7 +24,7 @@ func main() {
 	viper.BindEnv("db.port", "DB_PORT", "POSTGRES_PORT")
 	viper.BindEnv("db.user", "DB_USER", "POSTGRES_USER")
 	viper.BindEnv("db.password", "DB_PASSWORD", "POSTGRES_PASSWORD")
-	viper.BindEnv("db.database", "DB_DATABASE", "POSTGRES_DATABASE")
+	viper.BindEnv("db.database", "DB_DATABASE", "POSTGRES_DATABASE", "POSTGRES_DB")
 
 	viper.BindEnv("environment", "GO_ENV")
 
