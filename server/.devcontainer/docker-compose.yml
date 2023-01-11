@@ -14,6 +14,8 @@ services:
         # NODE_VERSION: "16"
     volumes:
       - .:/workspace:cached
+    environment:
+      GO_ENV: development
     env_file:
       - .env
 
