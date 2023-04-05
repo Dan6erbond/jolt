@@ -20,7 +20,7 @@ export const useTmdbClient = () => {
 
   if (tmdbClient === null) {
     throw new Error(
-      "TMDB client needs to be initialized in a TmdbClientProvider"
+      "TMDB client needs to be initialized in a TmdbClientProvider",
     );
   }
 

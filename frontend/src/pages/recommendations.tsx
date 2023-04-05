@@ -1,26 +1,33 @@
+import { useQuery } from "@apollo/client";
+import { Box, Group, Space, Stack, Title } from "@mantine/core";
 import { TbUserPlus } from "react-icons/tb";
-import {
-  ActionIcon,
-  Avatar,
-  Blockquote,
-  Box,
-  Button,
-  Card,
-  Divider,
-  Group,
-  Image,
-  Paper,
-  Skeleton,
-  Space,
-  Stack,
-  Text,
-  Title,
-  useMantineTheme,
-} from "@mantine/core";
-import { IconBolt, IconCircleChevronRight } from "@tabler/icons";
-import { Link } from "react-router-dom";
 import RecommendationCard from "../components/recommendationCard";
+import { graphql } from "../gql";
 const Recommendations = () => {
+  const { data } = useQuery(
+    graphql(`
+      query Recommendations {
+        me {
+          recommendations {
+            id
+            media {
+              __typename
+              ... on Movie {
+                id
+                tmdbId
+              }
+            }
+            recommendedBy {
+              id
+              name
+            }
+            message
+          }
+        }
+      }
+    `),
+  );
+
   return (
     <Box>
       <Group>
@@ -29,8 +36,11 @@ const Recommendations = () => {
       </Group>
       <Space h="lg" />
       <Stack>
-        {new Array(10).fill(undefined).map((idx) => (
-          <RecommendationCard key={idx} />
+        {data?.me.recommendations.map((recommendation) => (
+          <RecommendationCard
+            key={recommendation.id}
+            recommendation={recommendation}
+          />
         ))}
       </Stack>
     </Box>

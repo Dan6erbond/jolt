@@ -1,26 +1,36 @@
+import { useQuery } from "@apollo/client";
 import { Group, ScrollArea, Stack, Title } from "@mantine/core";
 import { useEffect, useState } from "react";
 import Poster from "../components/poster";
+import { graphql } from "../gql";
 import { useTmdbClient } from "../tmdb/context";
-import { Movie } from "../tmdb/types/movie";
 import { Tv } from "../tmdb/types/tv";
 
 const Discover = () => {
   const tmdbClient = useTmdbClient();
 
-  const [movies, setMovies] = useState<Array<Movie> | undefined>();
   const [shows, setShows] = useState<Array<Tv> | undefined>();
 
+  const { data } = useQuery(
+    graphql(`
+      query Discover {
+        discoverMovies {
+          id
+          tmdbId
+          title
+          posterPath
+          backdropPath
+        }
+      }
+    `),
+  );
+
   useEffect(() => {
-    (async () => {
-      const { results } = await tmdbClient.discoverMovie();
-      setMovies(results);
-    })();
     (async () => {
       const { results } = await tmdbClient.discoverTv();
       setShows(results);
     })();
-  }, [setMovies, setShows, tmdbClient]);
+  }, [setShows, tmdbClient]);
 
   return (
     <Stack spacing="md">
@@ -31,8 +41,8 @@ const Discover = () => {
             flexWrap: "nowrap",
           }}
         >
-          {movies
-            ? movies.map((movie) => (
+          {data?.discoverMovies
+            ? data?.discoverMovies.map((movie) => (
                 <Poster key={movie.id} size="lg" model={movie} />
               ))
             : new Array(10)

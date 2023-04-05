@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   Center,
   Container,
   Group,
@@ -9,11 +10,9 @@ import {
   Title,
   UnstyledButton,
   useMantineTheme,
-  Button,
 } from "@mantine/core";
-import { IconArmchair2, IconDeviceTv, IconMovie } from "@tabler/icons";
 import { useState } from "react";
-import { BiCameraMovie, BiTv, BiPlayCircle } from "react-icons/bi";
+import { BiCameraMovie, BiPlayCircle, BiTv } from "react-icons/bi";
 
 const MashUp = () => {
   const theme = useMantineTheme();

@@ -12,11 +12,20 @@ interface PosterProps {
   model?:
     | Pick<Tv, "media_type" | "id" | "poster_path" | "name">
     | Pick<Person, "media_type" | "id" | "profile_path" | "name">
-    | Pick<Movie, "media_type" | "id" | "poster_path" | "title">;
+    | Pick<Movie, "media_type" | "id" | "poster_path" | "title">
+    | {
+        __typename?: "Movie";
+        id: string;
+        tmdbId: string;
+        title: string;
+        posterPath: string;
+        backdropPath: string;
+      };
   size: "xs" | "sm" | "md" | "lg" | "xl";
+  asLink?: boolean;
 }
 
-const Poster = ({ model, size }: PosterProps) => {
+const Poster = ({ model, size, asLink = true }: PosterProps) => {
   const height = useMemo(() => {
     switch (size) {
       case "xs":
@@ -33,53 +42,65 @@ const Poster = ({ model, size }: PosterProps) => {
   }, [size]);
   const width = useMemo(() => 2000 * (height / 3000), [height]);
 
-  return (
+  const card = (
+    <Card
+      shadow="sm"
+      p="lg"
+      radius="md"
+      withBorder
+      sx={{
+        flexShrink: 0,
+        transition: "transform 0.15s ease",
+        ":hover": { transform: "scale(1.1)" },
+      }}
+    >
+      <Card.Section>
+        <Image
+          src={
+            model
+              ? `https://image.tmdb.org/t/p/original/${
+                  isPerson(model)
+                    ? model.profile_path
+                    : model.__typename === "Movie"
+                    ? model.posterPath
+                    : (model as Tv | Movie).poster_path
+                }`
+              : null
+          }
+          height={height}
+          width={width}
+          alt={
+            model
+              ? isMovie(model)
+                ? model.title
+                : (model as Tv | Person).name
+              : ""
+          }
+          withPlaceholder
+          placeholder={<Skeleton height={height} width={width} />}
+        />
+      </Card.Section>
+    </Card>
+  );
+
+  return asLink ? (
     <Link
       to={
         model
-          ? `/${isMovie(model) ? "movies" : isTv(model) ? "tv" : "person"}/${
-              model.id
-            }`
+          ? `/${
+              model.__typename === "Movie" || isMovie(model)
+                ? "movies"
+                : isTv(model)
+                ? "tv"
+                : "person"
+            }/${model.__typename === "Movie" ? model.tmdbId : model.id}`
           : "#"
       }
     >
-      <Card
-        shadow="sm"
-        p="lg"
-        radius="md"
-        withBorder
-        sx={{
-          flexShrink: 0,
-          transition: "transform 0.15s ease",
-          ":hover": { transform: "scale(1.1)" },
-        }}
-      >
-        <Card.Section>
-          <Image
-            src={
-              model
-                ? `https://image.tmdb.org/t/p/original/${
-                    isPerson(model)
-                      ? model.profile_path
-                      : (model as Tv | Movie).poster_path
-                  }`
-                : null
-            }
-            height={height}
-            width={width}
-            alt={
-              model
-                ? isMovie(model)
-                  ? model.title
-                  : (model as Tv | Person).name
-                : ""
-            }
-            withPlaceholder
-            placeholder={<Skeleton height={height} width={width} />}
-          />
-        </Card.Section>
-      </Card>
+      {card}
     </Link>
+  ) : (
+    card
   );
 };
 

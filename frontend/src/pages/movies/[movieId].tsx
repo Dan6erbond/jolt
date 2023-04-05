@@ -1,6 +1,8 @@
+import { useApolloClient, useMutation, useQuery } from "@apollo/client";
 import {
   ActionIcon,
   Avatar,
+  Badge,
   Box,
   Button,
   Card,
@@ -14,6 +16,7 @@ import {
   Skeleton,
   Space,
   Stack,
+  Tabs,
   Text,
   Textarea,
   Title,
@@ -24,12 +27,16 @@ import {
   IconChevronDown,
   IconClockHour4,
   IconEyeCheck,
+  IconMessage2,
   IconSend,
+  IconStar,
   IconUserPlus,
 } from "@tabler/icons";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Form, useParams } from "react-router-dom";
 import Poster from "../../components/poster";
+import { UserSelectItem } from "../../components/userSelectItem";
+import { graphql } from "../../gql";
 import { useTmdbClient } from "../../tmdb/context";
 import { MovieDetails } from "../../tmdb/types/movie";
 
@@ -37,8 +44,73 @@ const Movie = () => {
   const { movieId } = useParams();
   const tmdbClient = useTmdbClient();
   const theme = useMantineTheme();
+  const client = useApolloClient();
 
   const [movie, setMovie] = useState<MovieDetails | undefined>();
+  const [certification, setCertification] = useState<string>("");
+
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+  const [recommendUserId, setRecommendUserId] = useState<string | null>(null);
+  const [recommendationMessage, setRecommendationMessage] = useState("");
+
+  const { data: myIdData } = useQuery(
+    graphql(`
+      query MyId {
+        me {
+          id
+        }
+      }
+    `),
+  );
+
+  const { data } = useQuery(
+    graphql(`
+      query Movie($tmdbId: ID!) {
+        movie(tmdbId: $tmdbId) {
+          id
+          rating
+          reviews {
+            id
+            review
+            createdBy {
+              id
+              name
+            }
+          }
+          userReview {
+            id
+            rating
+            review
+          }
+        }
+      }
+    `),
+    { variables: { tmdbId: movieId! } },
+  );
+
+  const { data: usersData } = useQuery(
+    graphql(`
+      query Users {
+        users {
+          id
+          name
+        }
+      }
+    `),
+  );
+
+  const userRating = data?.movie.userReview?.rating;
+
+  useEffect(() => {
+    userRating && setRating(userRating);
+  }, [userRating, setRating]);
+
+  const userReview = data?.movie.userReview?.review;
+
+  useEffect(() => {
+    userReview && setReview(userReview);
+  }, [userReview, setReview]);
 
   const [showRecommendationModal, setShowRecommendationModal] =
     useState<boolean>(false);
@@ -46,11 +118,69 @@ const Movie = () => {
   useEffect(() => {
     (async () => {
       const movie = await tmdbClient.getMovieDetails({
-        movieId: parseInt(movieId as string),
+        movieId: movieId!,
       });
       setMovie(movie);
+      const { results } = await tmdbClient.getMovieReleaseDates({
+        movieId: movieId!,
+      });
+      const usResult = results.find((result) => result.iso_3166_1 === "US");
+      if (usResult) {
+        setCertification(usResult.release_dates[0].certification);
+      }
     })();
-  }, [setMovie, movieId, tmdbClient]);
+  }, [setMovie, movieId, tmdbClient, setCertification]);
+
+  const [reviewMovie, { loading: submittingReview }] = useMutation(
+    graphql(`
+      mutation ReviewMovie($tmdbId: ID!, $review: String!) {
+        reviewMovie(tmdbId: $tmdbId, review: $review) {
+          movie {
+            id
+            reviews {
+              review
+              createdBy {
+                id
+                name
+              }
+            }
+          }
+        }
+      }
+    `),
+  );
+
+  const submitReview = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    reviewMovie({
+      variables: { tmdbId: movieId!, review: review },
+    });
+  };
+
+  const submitRecommendation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    client.mutate({
+      mutation: graphql(`
+        mutation RecommendMovie($tmdbId: ID!, $userId: ID!, $message: String!) {
+          createRecommendation(
+            input: {
+              tmdbId: $tmdbId
+              mediaType: MOVIE
+              recommendationForUserId: $userId
+              message: $message
+            }
+          ) {
+            id
+          }
+        }
+      `),
+      variables: {
+        message: recommendationMessage,
+        tmdbId: movieId!,
+        userId: recommendUserId!,
+      },
+    });
+  };
 
   return (
     <Box>
@@ -65,7 +195,7 @@ const Movie = () => {
             background: theme.fn.linearGradient(
               45,
               theme.fn.rgba(theme.colors.dark[3], 0.7),
-              theme.fn.rgba(theme.colors.dark[6], 0.7)
+              theme.fn.rgba(theme.colors.dark[6], 0.7),
             ),
             backdropFilter: "blur(10px)",
           },
@@ -77,6 +207,7 @@ const Movie = () => {
         }
         overlayOpacity={0.65}
         overlayBlur={3}
+        size="lg"
       >
         <Stack>
           <Flex gap="md">
@@ -88,50 +219,81 @@ const Movie = () => {
                   ({movie?.release_date.slice(0, 4)})
                 </Text>
               </Title>
-              <Text color={theme.colors.gray[4]}>
-                {movie?.genres
-                  .map(({ name }: { id: number; name: string }) => name)
-                  .join(", ")}
-              </Text>
-              <Rating value={2} readOnly />
+              <Group spacing="xs">
+                {certification && (
+                  <>
+                    <Badge color="indigo" size="md" variant="outline">
+                      {certification}
+                    </Badge>
+                    <Divider
+                      orientation="vertical"
+                      color={theme.colors.dark[0]}
+                    />
+                  </>
+                )}
+                <Text color={theme.colors.gray[4]}>
+                  {movie?.genres
+                    .map(({ name }: { id: number; name: string }) => name)
+                    .join(", ")}
+                </Text>
+              </Group>
+              <Rating value={data?.movie.rating} readOnly />
             </Stack>
           </Flex>
-          <Select
-            data={["John Doe"]}
-            searchable
-            styles={{
-              input: {
-                border: `1px solid ${theme.colors.dark[1]}`,
-                color: "white",
-                "::placeholder": { color: theme.colors.gray[4] },
-              },
-              dropdown: {
-                color: theme.colors.gray[4],
-              },
-            }}
-            rightSection={<IconChevronDown size={14} />}
-            rightSectionWidth={30}
-          />
-          <Textarea
-            label="Tell them your thoughts"
-            placeholder="Tell them your thoughts"
-            styles={(theme) => ({
-              input: {
-                border: `1px solid ${theme.colors.dark[1]}`,
-                color: "white",
-                "::placeholder": { color: theme.colors.gray[4] },
-              },
-              label: { color: "white" },
-            })}
-          />
-          <Button
-            sx={{ alignSelf: "end" }}
-            variant="light"
-            radius="lg"
-            rightIcon={<IconSend />}
-          >
-            Recommend
-          </Button>
+          <Form onSubmit={submitRecommendation}>
+            <Stack>
+              <Select
+                data={
+                  usersData?.users
+                    .filter((user) => user.id !== myIdData?.me.id)
+                    .map((user) => ({
+                      ...user,
+                      value: user.id,
+                      label: user.name,
+                    })) || []
+                }
+                searchable
+                styles={{
+                  input: {
+                    border: `1px solid ${theme.colors.dark[1]}`,
+                    color: "white",
+                    "::placeholder": { color: theme.colors.gray[4] },
+                  },
+                  dropdown: {
+                    color: theme.colors.gray[4],
+                  },
+                }}
+                value={recommendUserId}
+                onChange={setRecommendUserId}
+                itemComponent={UserSelectItem}
+                rightSection={<IconChevronDown size={14} />}
+                rightSectionWidth={30}
+              />
+              <Textarea
+                label="Tell them your thoughts"
+                placeholder="Tell them your thoughts"
+                styles={(theme) => ({
+                  input: {
+                    border: `1px solid ${theme.colors.dark[1]}`,
+                    color: "white",
+                    "::placeholder": { color: theme.colors.gray[4] },
+                  },
+                  label: { color: "white" },
+                })}
+                value={recommendationMessage}
+                onChange={(e) => setRecommendationMessage(e.target.value)}
+              />
+              <Button
+                sx={{ alignSelf: "end" }}
+                variant="light"
+                radius="lg"
+                rightIcon={<IconSend />}
+                type="submit"
+              >
+                Recommend
+              </Button>
+            </Stack>
+          </Form>
         </Stack>
       </Modal>
       <Box style={{ position: "relative", overflow: "hidden" }}>
@@ -186,23 +348,41 @@ const Movie = () => {
                       ({movie.release_date.slice(0, 4)})
                     </Text>
                   </Title>
-                  <Text color="white">
-                    {movie.genres
-                      .map(({ name }: { id: number; name: string }) => name)
-                      .join(", ")}
-                  </Text>
+                  <Group spacing="xs">
+                    {certification && (
+                      <>
+                        <Badge color="indigo" size="lg" variant="outline">
+                          {certification}
+                        </Badge>
+                        <Divider
+                          orientation="vertical"
+                          color={theme.colors.dark[0]}
+                        />
+                      </>
+                    )}
+                    <Text color="white">
+                      {movie.genres
+                        .map(({ name }: { id: number; name: string }) => name)
+                        .join(", ")}
+                    </Text>
+                  </Group>
                 </Stack>
                 <Box style={{ flexGrow: 1 }} />
-                <Tooltip label="Watched">
-                  <ActionIcon>
-                    <IconEyeCheck />
-                  </ActionIcon>
-                </Tooltip>
-                <Tooltip label="Add to Watchlist">
-                  <ActionIcon>
-                    <IconClockHour4 />
-                  </ActionIcon>
-                </Tooltip>
+                <Stack>
+                  <Rating value={data?.movie?.rating} readOnly size="sm" />
+                  <Flex justify="end" gap="sm">
+                    <Tooltip label="Watched">
+                      <ActionIcon>
+                        <IconEyeCheck />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Add to Watchlist">
+                      <ActionIcon>
+                        <IconClockHour4 />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Flex>
+                </Stack>
               </Flex>
               <Text size="xl" sx={{ fontStyle: "italic" }}>
                 {movie.tagline}
@@ -212,91 +392,144 @@ const Movie = () => {
         )}
       </Box>
       <Space h="md" />
-      <Flex align="stretch" gap="md">
-        <Stack>
-          <Card
-            shadow="sm"
-            p="lg"
-            radius="md"
-            withBorder
-            bg="none"
-            sx={(theme) => ({
-              borderColor: theme.colors.dark[1],
-            })}
+      <Button
+        variant="light"
+        radius="lg"
+        rightIcon={<IconUserPlus />}
+        onClick={() => setShowRecommendationModal(true)}
+      >
+        Recommend this movie
+      </Button>
+      <Space h="xl" />
+      <Tabs
+        defaultValue="reviews"
+        styles={(theme) => ({
+          tabLabel: {
+            ":not": {
+              "[data-active]": { color: theme.colors.gray[4] },
+            },
+            "[data-active]": { color: "white" },
+          },
+          tabIcon: {
+            ":not": {
+              "[data-active]": { color: theme.colors.gray[4] },
+            },
+            "[data-active]": { color: "white" },
+          },
+        })}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="reviews" icon={<IconStar size="0.8rem" />}>
+            Reviews
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="comments"
+            icon={<IconMessage2 size="0.8rem" />}
+            disabled
           >
-            <Stack>
-              <Text color="white" size="xl">
-                Already seen it?
-              </Text>
-              <Rating defaultValue={2} size="xl" />
-            </Stack>
-          </Card>
-          <Button
-            variant="light"
-            radius="lg"
-            rightIcon={<IconUserPlus />}
-            onClick={() => setShowRecommendationModal(true)}
-          >
-            Recommend this movie
-          </Button>
-        </Stack>
-        <Card
-          shadow="sm"
-          p="lg"
-          radius="md"
-          withBorder
-          bg="none"
-          sx={(theme) => ({ borderColor: theme.colors.dark[1], flex: 1 })}
-        >
-          <Stack>
-            <Text color="white" size="xl">
-              Tell us what you thought about it
-            </Text>
-            <Textarea
-              placeholder="Your comment"
-              size="lg"
-              styles={(theme) => ({
-                input: {
-                  border: `1px solid ${theme.colors.dark[1]}`,
-                  color: "white",
-                  "::placeholder": { color: theme.colors.gray[4] },
-                },
-              })}
-            />
-            <Button sx={{ alignSelf: "end" }} variant="light" radius="lg">
-              Submit
-            </Button>
+            Comments
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="reviews" pt="lg">
+          <Stack spacing="md" px="md">
+            <Card
+              shadow="sm"
+              p="lg"
+              radius="md"
+              withBorder
+              bg="none"
+              sx={(theme) => ({ borderColor: theme.colors.dark[1], flex: 1 })}
+            >
+              <Form onSubmit={submitReview}>
+                <Stack>
+                  <Title color="white" order={3}>
+                    Your Review
+                  </Title>
+                  <Textarea
+                    placeholder="Your comment"
+                    size="lg"
+                    styles={(theme) => ({
+                      input: {
+                        border: `1px solid ${theme.colors.dark[1]}`,
+                        color: "white",
+                        "::placeholder": { color: theme.colors.gray[4] },
+                      },
+                    })}
+                    value={review}
+                    onChange={(e) => setReview(e.target.value)}
+                  />
+                  <Flex justify="space-between" align="center">
+                    <Rating
+                      value={rating}
+                      onChange={(value) => {
+                        setRating(value);
+                        client.mutate({
+                          mutation: graphql(`
+                            mutation RateMovie($tmdbId: ID!, $rating: Float!) {
+                              rateMovie(tmdbId: $tmdbId, rating: $rating) {
+                                movie {
+                                  id
+                                  rating
+                                  userReview {
+                                    id
+                                    rating
+                                    review
+                                  }
+                                }
+                              }
+                            }
+                          `),
+                          variables: {
+                            tmdbId: movieId!,
+                            rating: value,
+                          },
+                        });
+                      }}
+                    />
+                    <Button
+                      sx={{ alignSelf: "end" }}
+                      variant="light"
+                      radius="lg"
+                      type="submit"
+                      loading={submittingReview}
+                    >
+                      Submit
+                    </Button>
+                  </Flex>
+                </Stack>
+              </Form>
+            </Card>
+            {data?.movie.reviews
+              .filter((review) => review.createdBy.id !== myIdData?.me.id)
+              .map((review) => (
+                <Box key={review.id}>
+                  <Group>
+                    <Stack sx={{ flex: 1 }}>
+                      <Text color="white" sx={{ wordWrap: "normal" }}>
+                        {review.review}
+                      </Text>
+                      <Group>
+                        <Rating value={2} readOnly />
+                        <Avatar radius="xl">
+                          {review.createdBy.name
+                            .split(" ")
+                            .map((name) => name[0].toUpperCase())
+                            .join("")}
+                        </Avatar>
+                        <Text color="white">{review.createdBy.name}</Text>
+                      </Group>
+                    </Stack>
+                  </Group>
+                  <Space h="sm" />
+                  <Divider size="sm" color={theme.colors.dark[3]} />
+                </Box>
+              ))}
           </Stack>
-        </Card>
-      </Flex>
-      <Space h="xl" />
-      <Title color="white" size="h3">
-        What others think
-      </Title>
-      <Space h="xl" />
-      <Stack spacing="md" px="md">
-        {new Array(5).fill(undefined).map((_, idx) => (
-          <Box key={idx}>
-            <Group>
-              <Stack sx={{ flex: 1 }}>
-                <Text color="white" sx={{ wordWrap: "normal" }}>
-                  Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-                  Excepturi labore nulla nihil eos optio iusto? Iure, deleniti
-                  quibusdam iste repudiandae molestias repellendus, modi aliquam
-                  vel nesciunt doloribus, facere sapiente sint!
-                </Text>
-                <Group>
-                  <Rating value={2} readOnly />
-                  <Avatar radius="xl" />
-                  <Text color="white">John Doe</Text>
-                </Group>
-              </Stack>
-            </Group>
-            <Space h="sm" />
-            <Divider size="sm" color={theme.colors.dark[3]} />
-          </Box>
-        ))}
-      </Stack>
+        </Tabs.Panel>
+        <Tabs.Panel value="comments" pt="xs">
+          <Text>I&apos;m not implemented yet</Text>
+        </Tabs.Panel>
+      </Tabs>
     </Box>
   );
 };

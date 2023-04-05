@@ -1,3 +1,4 @@
+import { ApolloProvider } from "@apollo/client";
 import "@fontsource/nunito";
 import "@fontsource/righteous";
 import { MantineProvider } from "@mantine/core";
@@ -6,13 +7,16 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AppLayout from "./components/layouts/appLayout";
 import { Home } from "./pages";
 import Discover from "./pages/discover";
+import Login from "./pages/login";
 import MashUp from "./pages/mash-up";
 import Movie from "./pages/movies/[movieId]";
 import Recommendations from "./pages/recommendations";
+import Search from "./pages/search";
 import Watchlist from "./pages/watchlist";
 import "./styles/main.css";
 import { TmdbClient } from "./tmdb/client";
 import TmdbClientProvider from "./tmdb/context";
+import { client } from "./utils/apolloClient";
 import { theme } from "./utils/theme";
 
 const router = createBrowserRouter([
@@ -38,7 +42,7 @@ const router = createBrowserRouter([
       },
       {
         path: "search",
-        element: null,
+        element: <Search />,
       },
       {
         path: "watchlist",
@@ -50,6 +54,10 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: "login",
+    element: <Login />,
+  },
 ]);
 
 const tmdbClient = new TmdbClient({
@@ -57,9 +65,11 @@ const tmdbClient = new TmdbClient({
 });
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <TmdbClientProvider client={tmdbClient}>
-    <MantineProvider withGlobalStyles withNormalizeCSS theme={theme}>
-      <RouterProvider router={router} />
-    </MantineProvider>
-  </TmdbClientProvider>
+  <ApolloProvider client={client}>
+    <TmdbClientProvider client={tmdbClient}>
+      <MantineProvider withGlobalStyles withNormalizeCSS theme={theme}>
+        <RouterProvider router={router} />
+      </MantineProvider>
+    </TmdbClientProvider>
+  </ApolloProvider>,
 );

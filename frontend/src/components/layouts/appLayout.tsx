@@ -1,3 +1,4 @@
+import { useApolloClient, useQuery, useReactiveVar } from "@apollo/client";
 import {
   AppShell,
   Autocomplete,
@@ -24,13 +25,15 @@ import {
   TbUser,
   TbUserPlus,
 } from "react-icons/tb";
-import { Form, Link, Outlet } from "react-router-dom";
+import { Form, Link, Outlet, useNavigate } from "react-router-dom";
+import { graphql } from "../../gql";
 import { useTmdbClient } from "../../tmdb/context";
 import { Movie } from "../../tmdb/types/movie";
-import { SearchResultItem } from "../../tmdb/types/multiSearch";
+import { MultiSearchResultItem } from "../../tmdb/types/multiSearch";
 import { Person } from "../../tmdb/types/person";
 import { Tv } from "../../tmdb/types/tv";
 import { isMovie } from "../../tmdb/utils/isMovie";
+import { loggedIn, sessionError } from "../../utils/apolloClient";
 
 export type SearchResultItemProps =
   | (Tv & Omit<SelectItemProps, "id">)
@@ -38,11 +41,34 @@ export type SearchResultItemProps =
   | (Person & Omit<SelectItemProps, "id">);
 
 const AppLayout = () => {
+  const navigate = useNavigate();
   const theme = useMantineTheme();
   const tmdbClient = useTmdbClient();
 
+  const _sessionError = useReactiveVar(sessionError);
+  const _loggedIn = useReactiveVar(loggedIn);
+
+  const { data } = useQuery(
+    graphql(`
+      query Me {
+        me {
+          id
+          name
+        }
+      }
+    `),
+  );
+
+  useEffect(() => {
+    if (_sessionError === "REFRESH_TOKEN_EXPIRED" || !_loggedIn) {
+      navigate("/login");
+    }
+  }, [_sessionError, _loggedIn]);
+
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<Array<SearchResultItem> | undefined>();
+  const [results, setResults] = useState<
+    Array<MultiSearchResultItem> | undefined
+  >();
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
@@ -90,8 +116,8 @@ const AppLayout = () => {
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
+                  fillRule="evenodd"
+                  clipRule="evenodd"
                   d="M22 0L16.7054 19.7579H34L15 46L18.5057 27.8324H0L22 0Z"
                   fill="url(#paint0_linear_6_10)"
                 />
@@ -104,8 +130,8 @@ const AppLayout = () => {
                     y2="46"
                     gradientUnits="userSpaceOnUse"
                   >
-                    <stop stop-color="#A15BBC" />
-                    <stop offset="1" stop-color="#1E97D7" />
+                    <stop stopColor="#A15BBC" />
+                    <stop offset="1" stopColor="#1E97D7" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -114,7 +140,7 @@ const AppLayout = () => {
             <Button
               component={Link}
               to="/"
-              leftIcon={<TbHome />}
+              leftIcon={<TbHome color="white" size={24} />}
               variant="subtle"
               color="gray"
               size="lg"
@@ -184,7 +210,7 @@ const AppLayout = () => {
           <Autocomplete
             data={
               results?.map((item) =>
-                isMovie(item) ? item.title : item.name
+                isMovie(item) ? item.title : item.name,
               ) || []
             }
             value={search}
@@ -221,7 +247,10 @@ const AppLayout = () => {
               })}
             >
               <Avatar color="cyan" radius="xl" size="lg">
-                MK
+                {data?.me?.name
+                  .split(" ")
+                  .map((name) => name[0].toUpperCase())
+                  .join("")}
               </Avatar>
             </UnstyledButton>
           </Menu.Target>

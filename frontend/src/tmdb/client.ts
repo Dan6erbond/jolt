@@ -1,4 +1,4 @@
-import { Movie, MovieDetails } from "./types/movie";
+import { Movie, MovieDetails, MovieReleaseDates } from "./types/movie";
 import { MultiSearchResultItem } from "./types/multiSearch";
 import { PaginatedResult } from "./types/pagination";
 import { Tv } from "./types/tv";
@@ -12,7 +12,11 @@ export interface MultiSearchFetchOptions {
 }
 
 export interface GetMovieDetailsFetchOptions {
-  movieId: number;
+  movieId: string;
+}
+
+export interface GetMovieReleaseDatesFetchOptions {
+  movieId: string;
 }
 
 export class TmdbClient {
@@ -50,5 +54,14 @@ export class TmdbClient {
     url.searchParams.append("api_key", this.apiKey);
     const res = await fetch(url.toString());
     return (await res.json()) as MovieDetails;
+  }
+
+  public async getMovieReleaseDates({
+    movieId,
+  }: GetMovieReleaseDatesFetchOptions) {
+    const url = new URL(`${this.apiRoot}/movie/${movieId}/release_dates`);
+    url.searchParams.append("api_key", this.apiKey);
+    const res = await fetch(url.toString());
+    return (await res.json()) as MovieReleaseDates;
   }
 }
