@@ -8,6 +8,7 @@ type User {
 
 extend type Query {
   me: User! @loggedIn
+  users: [User!]! @loggedIn
 }
 
 input AddToWatchlistInput {

@@ -72,9 +72,17 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 	return user, nil
 }
 
-// ID is the resolver for the id field.
-func (r *userResolver) ID(ctx context.Context, obj *models.User) (string, error) {
-	return fmt.Sprintf("%d", obj.ID), nil
+// Users is the resolver for the users field.
+func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
+	var users []*models.User
+
+	err := r.db.Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 // Watchlist is the resolver for the watchlist field.
