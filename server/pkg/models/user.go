@@ -7,6 +7,7 @@ type User struct {
 	Name                   string
 	AuthenticationSource   string
 	JellyfinAccessToken    string
+	JellyfinUserID         string
 	Watchlist              []Watchlist
 	RecommendationsCreated []Recommendation `gorm:"foreignKey:RecommendationByID"`
 	Recommendations        []Recommendation `gorm:"foreignKey:RecommendationForID"`
