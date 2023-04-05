@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -20,14 +21,21 @@ func Middleware(as *AuthService) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, ok := r.Header["Authorization"]
 
-			if !ok || len(token) == 0 {
+			if !ok || len(token) == 0 || token[0] == "" {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			jwtToken, err := as.ParseAccessToken(strings.Split(token[0]," ")[1])
+			jwtToken, err := as.ParseAccessToken(strings.Split(token[0], " ")[1])
 			if err != nil || !jwtToken.Valid {
-				http.Error(w, "invalid token", http.StatusForbidden)
+				type InvalidTokenError struct {
+					Error string `json:"error"`
+				}
+				httpError, err := json.Marshal(InvalidTokenError{"invalid token"})
+				if err != nil {
+					panic(err)
+				}
+				http.Error(w, string(httpError), http.StatusUnauthorized)
 				return
 			}
 
