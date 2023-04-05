@@ -16,10 +16,18 @@ type AuthService struct {
 }
 
 func (as *AuthService) GenerateAccessToken(user models.User) (*jwt.Token, error) {
+	var accessTokenExpiry int64
+
+	if viper.GetString("environment") == "development" {
+		accessTokenExpiry = time.Now().Add(time.Hour * 24).Unix()
+	} else {
+		accessTokenExpiry = time.Now().Add(time.Minute * 15).Unix()
+	}
+
 	accessTokenClaims := AccessTokenClaims{
 		user.Name,
 		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
+			ExpiresAt: accessTokenExpiry,
 			Issuer:    "dikurium.ch",
 		},
 	}
