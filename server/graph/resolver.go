@@ -3,7 +3,9 @@ package graph
 
 import (
 	"github.com/dan6erbond/jolt-server/internal/jellyfin"
+	"github.com/dan6erbond/jolt-server/internal/tmdb"
 	"github.com/dan6erbond/jolt-server/pkg/auth"
+	"github.com/dan6erbond/jolt-server/pkg/services"
 	"gorm.io/gorm"
 )
 
@@ -14,9 +16,11 @@ import (
 type Resolver struct {
 	db             *gorm.DB
 	authService    *auth.AuthService
-	jellyfinClient *jellyfin.JellyfinClient
+	jellyfinClient *jellyfin.Client
+	movieService   *services.MovieService
+	tmdbService    *tmdb.Service
 }
 
-func NewResolver(db *gorm.DB, as *auth.AuthService, jc *jellyfin.JellyfinClient) *Resolver {
-	return &Resolver{db, as, jc}
+func NewResolver(db *gorm.DB, as *auth.AuthService, jc *jellyfin.Client, movieService *services.MovieService, tmdbService *tmdb.Service) *Resolver {
+	return &Resolver{db, as, jc, movieService, tmdbService}
 }

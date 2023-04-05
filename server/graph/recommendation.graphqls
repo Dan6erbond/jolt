@@ -1,4 +1,5 @@
 type Recommendation {
+  id: ID!
   media: Media!
   recommendedBy: User!
   message: String!

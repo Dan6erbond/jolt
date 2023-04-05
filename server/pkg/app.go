@@ -3,8 +3,10 @@ package pkg
 import (
 	"github.com/dan6erbond/jolt-server/graph"
 	"github.com/dan6erbond/jolt-server/internal/jellyfin"
+	"github.com/dan6erbond/jolt-server/internal/tmdb"
 	"github.com/dan6erbond/jolt-server/pkg/auth"
 	"github.com/dan6erbond/jolt-server/pkg/graphql"
+	"github.com/dan6erbond/jolt-server/pkg/services"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -18,8 +20,10 @@ func NewApp() *fx.App {
 			NewDb,
 			auth.NewAuthService,
 			jellyfin.NewJellyfinClient,
+			tmdb.NewTMDBService,
 			graph.NewResolver,
 			graphql.NewConfig,
+			services.NewMovieService,
 		),
 		fx.Invoke(
 			graphql.RegisterRoutes,

@@ -3,6 +3,7 @@ package jellyfin
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,11 +16,11 @@ var (
 	EmptyToken = BaseToken + ", Token=\"\""
 )
 
-type JellyfinClient struct {
+type Client struct {
 	host string
 }
 
-func (jc *JellyfinClient) AuthenticateUserByName(username string, password string) (*AuthenticateUserByNameResult, error) {
+func (jc *Client) AuthenticateUserByName(username string, password string) (*AuthenticateUserByNameResult, error) {
 	u, err := url.Parse(jc.host)
 	if err != nil {
 		return nil, err
@@ -55,6 +56,43 @@ func (jc *JellyfinClient) AuthenticateUserByName(username string, password strin
 	return &result, nil
 }
 
-func NewJellyfinClient() *JellyfinClient {
-	return &JellyfinClient{host: viper.GetString("jellyfin.host")}
+func (jc *Client) GetUserAuthorization(token string) string {
+	return BaseToken + fmt.Sprintf(", Token=\"%s\"", token)
+}
+
+func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*AuthenticateUserByNameResult, error) {
+	u, err := url.Parse(jc.host)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Path = fmt.Sprintf("/Users/%s/Items", userID)
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var result AuthenticateUserByNameResult
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func NewJellyfinClient() *Client {
+	return &Client{host: viper.GetString("jellyfin.host")}
 }

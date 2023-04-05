@@ -6,6 +6,8 @@ type Query
 
 type Mutation
 
+scalar Time
+
 enum MediaType {
   MOVIE
   TV

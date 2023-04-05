@@ -21,23 +21,12 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 	}
 
 	if input.MediaType == model.MediaTypeMovie {
-		var movie models.Movie
-		tx := r.db.FirstOrCreate(&movie, "tmdb_id = ?", input.TmdbID)
-
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
-
 		tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		movie.TmdbID = int(tmdbId)
 
-		tx = r.db.Save(movie)
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		recommendationForID, err := strconv.ParseInt(input.RecommendationForUserID, 10, 64)
 		if err != nil {

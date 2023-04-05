@@ -37,7 +37,6 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 			db.AutoMigrate(&models.User{})
 			db.AutoMigrate(&models.RefreshToken{})
 			db.AutoMigrate(&models.Movie{})
-			db.AutoMigrate(&models.MovieRating{})
 			db.AutoMigrate(&models.MovieReview{})
 			db.AutoMigrate(&models.Watchlist{})
 			db.AutoMigrate(&models.Recommendation{})

@@ -1,32 +1,37 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"github.com/lib/pq"
+	"gorm.io/gorm"
+)
 
 type Movie struct {
 	gorm.Model
-	TmdbID          int
-	Recommendations []Recommendation `gorm:"polymorphic:Media;"`
-	Watchlists      []Watchlist      `gorm:"polymorphic:Media;"`
-	Ratings         []MovieRating
-	Reviews         []MovieReview
+	TmdbID                   int
+	SyncedWithTmdb           bool `gorm:"default:false"`
+	Title                    string
+	Tagline                  string
+	PosterPath               string
+	BackdropPath             string
+	Genres                   pq.StringArray `gorm:"type:text[]"`
+	ReleaseDate              time.Time
+	Certification            string
+	CertificationDoesntExist bool             `gorm:"false"`
+	Recommendations          []Recommendation `gorm:"polymorphic:Media;"`
+	Watchlists               []Watchlist      `gorm:"polymorphic:Media;"`
+	Reviews                  []MovieReview
 }
 
 func (m Movie) IsMedia() {}
 
-type MovieRating struct {
-	gorm.Model
-	MovieID     int
-	Movie       Movie
-	Rating      float64
-	CreatedByID int
-	CreatedBy   User
-}
-
 type MovieReview struct {
 	gorm.Model
-	MovieID     int
+	MovieID     uint
 	Movie       Movie
 	Review      string
-	CreatedByID int
+	Rating      float64
+	CreatedByID uint
 	CreatedBy   User
 }
