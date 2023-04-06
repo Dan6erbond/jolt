@@ -1,25 +1,25 @@
 import { Card, Image, Skeleton } from "@mantine/core";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Movie } from "../tmdb/types/movie";
-import { Person } from "../tmdb/types/person";
-import { Tv } from "../tmdb/types/tv";
 import { isMovie } from "../tmdb/utils/isMovie";
-import { isPerson } from "../tmdb/utils/isPerson";
 import { isTv } from "../tmdb/utils/isTv";
 
 interface PosterProps {
   model?:
-    | Pick<Tv, "media_type" | "id" | "poster_path" | "name">
-    | Pick<Person, "media_type" | "id" | "profile_path" | "name">
-    | Pick<Movie, "media_type" | "id" | "poster_path" | "title">
+    | {
+        __typename?: "Tv";
+        id: string;
+        tmdbId: string;
+        name: string;
+        posterPath: string;
+        backdropPath: string;
+      }
     | {
         __typename?: "Movie";
         id: string;
         tmdbId: string;
         title: string;
         posterPath: string;
-        backdropPath: string;
       };
   size: "xs" | "sm" | "md" | "lg" | "xl";
   asLink?: boolean;
@@ -58,24 +58,12 @@ const Poster = ({ model, size, asLink = true }: PosterProps) => {
         <Image
           src={
             model
-              ? `https://image.tmdb.org/t/p/original/${
-                  isPerson(model)
-                    ? model.profile_path
-                    : model.__typename === "Movie"
-                    ? model.posterPath
-                    : (model as Tv | Movie).poster_path
-                }`
+              ? `https://image.tmdb.org/t/p/original/${model.posterPath}`
               : null
           }
           height={height}
           width={width}
-          alt={
-            model
-              ? isMovie(model)
-                ? model.title
-                : (model as Tv | Person).name
-              : ""
-          }
+          alt={model?.__typename === "Movie" ? model.title : model?.name}
           withPlaceholder
           placeholder={<Skeleton height={height} width={width} />}
         />
