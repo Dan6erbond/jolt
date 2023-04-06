@@ -1,16 +1,9 @@
 import { useQuery } from "@apollo/client";
 import { Group, ScrollArea, Stack, Title } from "@mantine/core";
-import { useEffect, useState } from "react";
 import Poster from "../components/poster";
 import { graphql } from "../gql";
-import { useTmdbClient } from "../tmdb/context";
-import { Tv } from "../tmdb/types/tv";
 
 const Discover = () => {
-  const tmdbClient = useTmdbClient();
-
-  const [shows, setShows] = useState<Array<Tv> | undefined>();
-
   const { data } = useQuery(
     graphql(`
       query Discover {
@@ -21,21 +14,21 @@ const Discover = () => {
           posterPath
           backdropPath
         }
+        discoverTvs {
+          id
+          tmdbId
+          name
+          posterPath
+          backdropPath
+        }
       }
     `),
   );
 
-  useEffect(() => {
-    (async () => {
-      const { results } = await tmdbClient.discoverTv();
-      setShows(results);
-    })();
-  }, [setShows, tmdbClient]);
-
   return (
     <Stack spacing="md">
       <Title color="white">Movies</Title>
-      <ScrollArea>
+      <ScrollArea styles={{ viewport: { overflowY: "hidden" } }}>
         <Group
           sx={{
             flexWrap: "nowrap",
@@ -51,14 +44,14 @@ const Discover = () => {
         </Group>
       </ScrollArea>
       <Title color="white">Shows</Title>
-      <ScrollArea>
+      <ScrollArea styles={{ viewport: { overflowY: "hidden" } }}>
         <Group
           sx={{
             flexWrap: "nowrap",
           }}
         >
-          {shows
-            ? shows.map((show) => (
+          {data?.discoverTvs
+            ? data.discoverTvs.map((show) => (
                 <Poster key={show.id} size="lg" model={show} />
               ))
             : new Array(10)

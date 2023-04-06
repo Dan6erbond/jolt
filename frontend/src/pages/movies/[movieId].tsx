@@ -37,17 +37,11 @@ import { Form, useParams } from "react-router-dom";
 import Poster from "../../components/poster";
 import { UserSelectItem } from "../../components/userSelectItem";
 import { graphql } from "../../gql";
-import { useTmdbClient } from "../../tmdb/context";
-import { MovieDetails } from "../../tmdb/types/movie";
 
 const Movie = () => {
   const { movieId } = useParams();
-  const tmdbClient = useTmdbClient();
   const theme = useMantineTheme();
   const client = useApolloClient();
-
-  const [movie, setMovie] = useState<MovieDetails | undefined>();
-  const [certification, setCertification] = useState<string>("");
 
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
@@ -69,6 +63,13 @@ const Movie = () => {
       query Movie($tmdbId: ID!) {
         movie(tmdbId: $tmdbId) {
           id
+          title
+          tagline
+          posterPath
+          backdropPath
+          certification
+          genres
+          releaseDate
           rating
           reviews {
             id
@@ -83,6 +84,7 @@ const Movie = () => {
             rating
             review
           }
+          addedToWatchlist
         }
       }
     `),
@@ -115,33 +117,19 @@ const Movie = () => {
   const [showRecommendationModal, setShowRecommendationModal] =
     useState<boolean>(false);
 
-  useEffect(() => {
-    (async () => {
-      const movie = await tmdbClient.getMovieDetails({
-        movieId: movieId!,
-      });
-      setMovie(movie);
-      const { results } = await tmdbClient.getMovieReleaseDates({
-        movieId: movieId!,
-      });
-      const usResult = results.find((result) => result.iso_3166_1 === "US");
-      if (usResult) {
-        setCertification(usResult.release_dates[0].certification);
-      }
-    })();
-  }, [setMovie, movieId, tmdbClient, setCertification]);
-
   const [reviewMovie, { loading: submittingReview }] = useMutation(
     graphql(`
       mutation ReviewMovie($tmdbId: ID!, $review: String!) {
         reviewMovie(tmdbId: $tmdbId, review: $review) {
-          movie {
-            id
-            reviews {
-              review
-              createdBy {
-                id
-                name
+          media {
+            ... on Movie {
+              id
+              reviews {
+                review
+                createdBy {
+                  id
+                  name
+                }
               }
             }
           }
@@ -182,6 +170,38 @@ const Movie = () => {
     });
   };
 
+  const toggleWatchlist = () => {
+    if (!data?.movie.addedToWatchlist) {
+      client.mutate({
+        mutation: graphql(`
+          mutation AddToWatchlist($tmdbId: ID!) {
+            addToWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
+              ... on Movie {
+                id
+                addedToWatchlist
+              }
+            }
+          }
+        `),
+        variables: { tmdbId: movieId! },
+      });
+    } else {
+      client.mutate({
+        mutation: graphql(`
+          mutation RemoveFromWatchlist($tmdbId: ID!) {
+            removeFromWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
+              ... on Movie {
+                id
+                addedToWatchlist
+              }
+            }
+          }
+        `),
+        variables: { tmdbId: movieId! },
+      });
+    }
+  };
+
   return (
     <Box>
       <Modal
@@ -211,19 +231,19 @@ const Movie = () => {
       >
         <Stack>
           <Flex gap="md">
-            <Poster model={movie} size="sm" />
+            <Poster model={data?.movie} size="sm" />
             <Stack spacing="xs" sx={{ flexGrow: 1 }}>
               <Title color="white" size="h3" sx={{ wordWrap: "break-word" }}>
-                {movie?.title}{" "}
+                {data?.movie.title}{" "}
                 <Text component="span" size="xl">
-                  ({movie?.release_date.slice(0, 4)})
+                  ({data?.movie.releaseDate.substring(0, 4)})
                 </Text>
               </Title>
               <Group spacing="xs">
-                {certification && (
+                {data?.movie.certification && (
                   <>
                     <Badge color="indigo" size="md" variant="outline">
-                      {certification}
+                      {data?.movie.certification}
                     </Badge>
                     <Divider
                       orientation="vertical"
@@ -232,9 +252,7 @@ const Movie = () => {
                   </>
                 )}
                 <Text color={theme.colors.gray[4]}>
-                  {movie?.genres
-                    .map(({ name }: { id: number; name: string }) => name)
-                    .join(", ")}
+                  {data?.movie.genres.join(", ")}
                 </Text>
               </Group>
               <Rating value={data?.movie.rating} readOnly />
@@ -299,7 +317,8 @@ const Movie = () => {
       <Box style={{ position: "relative", overflow: "hidden" }}>
         <Image
           src={
-            movie && `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+            data?.movie &&
+            `https://image.tmdb.org/t/p/original${data?.movie.backdropPath}`
           }
           styles={{
             image: {
@@ -319,7 +338,7 @@ const Movie = () => {
             bottom: 0,
           }}
         />
-        {movie && (
+        {data?.movie && (
           <Box
             style={{
               position: "absolute",
@@ -331,10 +350,10 @@ const Movie = () => {
             <Stack p="md" spacing="sm">
               <Flex align="end" gap="md">
                 <Image
-                  src={`https://image.tmdb.org/t/p/original${movie.poster_path}`}
+                  src={`https://image.tmdb.org/t/p/original${data?.movie.posterPath}`}
                   height={200}
                   width={2000 * (200 / 3000)}
-                  alt={movie.original_title}
+                  alt={data?.movie.title}
                   withPlaceholder
                   placeholder={
                     <Skeleton height={300} width={2000 * (300 / 3000)} />
@@ -343,16 +362,16 @@ const Movie = () => {
                 />
                 <Stack spacing="xs">
                   <Title color="white">
-                    {movie.title}{" "}
+                    {data?.movie.title}{" "}
                     <Text component="span" size="xl">
-                      ({movie.release_date.slice(0, 4)})
+                      ({data?.movie.releaseDate.substring(0, 4)})
                     </Text>
                   </Title>
                   <Group spacing="xs">
-                    {certification && (
+                    {data?.movie.certification && (
                       <>
                         <Badge color="indigo" size="lg" variant="outline">
-                          {certification}
+                          {data?.movie.certification}
                         </Badge>
                         <Divider
                           orientation="vertical"
@@ -360,16 +379,12 @@ const Movie = () => {
                         />
                       </>
                     )}
-                    <Text color="white">
-                      {movie.genres
-                        .map(({ name }: { id: number; name: string }) => name)
-                        .join(", ")}
-                    </Text>
+                    <Text color="white">{data?.movie.genres.join(", ")}</Text>
                   </Group>
                 </Stack>
                 <Box style={{ flexGrow: 1 }} />
                 <Stack>
-                  <Rating value={data?.movie?.rating} readOnly size="sm" />
+                  <Rating value={data?.movie.rating} readOnly size="sm" />
                   <Flex justify="end" gap="sm">
                     <Tooltip label="Watched">
                       <ActionIcon>
@@ -377,29 +392,66 @@ const Movie = () => {
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Add to Watchlist">
-                      <ActionIcon>
-                        <IconClockHour4 />
+                      <ActionIcon onClick={toggleWatchlist}>
+                        <IconClockHour4
+                          color={
+                            data.movie.addedToWatchlist
+                              ? theme.colors.yellow[6]
+                              : "white"
+                          }
+                        />
                       </ActionIcon>
                     </Tooltip>
                   </Flex>
                 </Stack>
               </Flex>
               <Text size="xl" sx={{ fontStyle: "italic" }}>
-                {movie.tagline}
+                {data?.movie.tagline}
               </Text>
             </Stack>
           </Box>
         )}
       </Box>
       <Space h="md" />
-      <Button
-        variant="light"
-        radius="lg"
-        rightIcon={<IconUserPlus />}
-        onClick={() => setShowRecommendationModal(true)}
-      >
-        Recommend this movie
-      </Button>
+      <Group>
+        <Rating
+          value={rating}
+          onChange={(value) => {
+            setRating(value);
+            client.mutate({
+              mutation: graphql(`
+                mutation RateMovie($tmdbId: ID!, $rating: Float!) {
+                  rateMovie(tmdbId: $tmdbId, rating: $rating) {
+                    media {
+                      ... on Movie {
+                        id
+                        rating
+                        userReview {
+                          id
+                          rating
+                          review
+                        }
+                      }
+                    }
+                  }
+                }
+              `),
+              variables: {
+                tmdbId: movieId!,
+                rating: value,
+              },
+            });
+          }}
+        />
+        <Button
+          variant="light"
+          radius="lg"
+          rightIcon={<IconUserPlus />}
+          onClick={() => setShowRecommendationModal(true)}
+        >
+          Recommend this movie
+        </Button>
+      </Group>
       <Space h="xl" />
       <Tabs
         defaultValue="reviews"
@@ -458,44 +510,15 @@ const Movie = () => {
                     value={review}
                     onChange={(e) => setReview(e.target.value)}
                   />
-                  <Flex justify="space-between" align="center">
-                    <Rating
-                      value={rating}
-                      onChange={(value) => {
-                        setRating(value);
-                        client.mutate({
-                          mutation: graphql(`
-                            mutation RateMovie($tmdbId: ID!, $rating: Float!) {
-                              rateMovie(tmdbId: $tmdbId, rating: $rating) {
-                                movie {
-                                  id
-                                  rating
-                                  userReview {
-                                    id
-                                    rating
-                                    review
-                                  }
-                                }
-                              }
-                            }
-                          `),
-                          variables: {
-                            tmdbId: movieId!,
-                            rating: value,
-                          },
-                        });
-                      }}
-                    />
-                    <Button
-                      sx={{ alignSelf: "end" }}
-                      variant="light"
-                      radius="lg"
-                      type="submit"
-                      loading={submittingReview}
-                    >
-                      Submit
-                    </Button>
-                  </Flex>
+                  <Button
+                    sx={{ alignSelf: "end" }}
+                    variant="light"
+                    radius="lg"
+                    type="submit"
+                    loading={submittingReview}
+                  >
+                    Submit
+                  </Button>
                 </Stack>
               </Form>
             </Card>

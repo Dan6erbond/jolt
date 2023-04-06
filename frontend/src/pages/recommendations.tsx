@@ -8,6 +8,7 @@ const Recommendations = () => {
     graphql(`
       query Recommendations {
         me {
+          id
           recommendations {
             id
             media {
