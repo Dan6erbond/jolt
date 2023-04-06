@@ -38,7 +38,7 @@
   ],
   // Use 'postCreateCommand' to run commands after the container is created.
   // Modifying the global git config here will not allow VSCode to copy local gitconfig to devcontainer
-  // "postCreateCommand": "git config --global --add safe.directory /workspace",
+  "postCreateCommand": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50",
   // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "features": {

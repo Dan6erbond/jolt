@@ -43,71 +43,76 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie) ([]*m
 }
 
 func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
-	if !movie.SyncedWithTmdb {
-		tmdbMovie, err := svc.tmdbService.Movie(fmt.Sprint(movie.TmdbID))
+	if movie.SyncedWithTmdb {
+		return movie, nil
+	}
 
+	tmdbMovie, err := svc.tmdbService.Movie(fmt.Sprint(movie.TmdbID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, genre := range tmdbMovie.Genres {
+		movie.Genres = append(movie.Genres, genre.Name)
+	}
+
+	movie.Tagline = tmdbMovie.Tagline
+
+	if tmdbMovie.ReleaseDate != "" {
+		releaseDate, err := time.Parse("2006-01-02", tmdbMovie.ReleaseDate)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, genre := range tmdbMovie.Genres {
-			movie.Genres = append(movie.Genres, genre.Name)
-		}
-
-		movie.Tagline = tmdbMovie.Tagline
-
-		if tmdbMovie.ReleaseDate != "" {
-			releaseDate, err := time.Parse("2006-01-02", tmdbMovie.ReleaseDate)
-			if err != nil {
-				return nil, err
-			}
-			movie.ReleaseDate = releaseDate
-		}
-
-		if movie.Certification == "" && !movie.CertificationDoesntExist {
-			releaseDates, err := svc.tmdbService.MovieReleaseDates(fmt.Sprint(movie.TmdbID))
-			if err != nil {
-				return nil, err
-			}
-
-			if len(releaseDates.Results) == 0 {
-				movie.CertificationDoesntExist = true
-			} else {
-				certificationCountryCode := viper.GetString("tmdb.certificationcountry")
-				fallbackCertificationCountryCode := viper.GetString("tmdb.fallbackcertificationcountry")
-				var (
-					fallbackCertification string
-					certificationFound    bool
-				)
-				for _, releaseDate := range releaseDates.Results {
-					if releaseDate.Iso31661 == certificationCountryCode {
-						for _, rdReleaseDate := range releaseDate.ReleaseDates {
-							if rdReleaseDate.Certification != "" {
-								movie.Certification = rdReleaseDate.Certification
-								certificationFound = true
-								break
-							}
-						}
-					} else if releaseDate.Iso31661 == fallbackCertificationCountryCode {
-						for _, rdReleaseDate := range releaseDate.ReleaseDates {
-							if rdReleaseDate.Certification != "" {
-								fallbackCertification = rdReleaseDate.Certification
-							}
-						}
-					}
-				}
-				if !certificationFound {
-					if fallbackCertification != "" {
-						movie.Certification = fallbackCertification
-					} else {
-						movie.CertificationDoesntExist = true
-					}
-				}
-			}
-		}
-
-		movie.SyncedWithTmdb = true
+		movie.ReleaseDate = releaseDate
 	}
+
+	//nolint:nestif
+	if movie.Certification == "" && !movie.CertificationDoesntExist {
+		releaseDates, err := svc.tmdbService.MovieReleaseDates(fmt.Sprint(movie.TmdbID))
+		if err != nil {
+			return nil, err
+		}
+
+		if len(releaseDates.Results) == 0 {
+			movie.CertificationDoesntExist = true
+		} else {
+			certificationCountryCode := viper.GetString("tmdb.certificationcountry")
+			fallbackCertificationCountryCode := viper.GetString("tmdb.fallbackcertificationcountry")
+			var (
+				fallbackCertification string
+				certificationFound    bool
+			)
+			for _, releaseDate := range releaseDates.Results {
+				if releaseDate.Iso31661 == certificationCountryCode {
+					for _, rdReleaseDate := range releaseDate.ReleaseDates {
+						if rdReleaseDate.Certification != "" {
+							movie.Certification = rdReleaseDate.Certification
+							certificationFound = true
+							break
+						}
+					}
+				} else if releaseDate.Iso31661 == fallbackCertificationCountryCode {
+					for _, rdReleaseDate := range releaseDate.ReleaseDates {
+						if rdReleaseDate.Certification != "" {
+							fallbackCertification = rdReleaseDate.Certification
+						}
+					}
+				}
+			}
+			if !certificationFound {
+				if fallbackCertification != "" {
+					movie.Certification = fallbackCertification
+				} else {
+					movie.CertificationDoesntExist = true
+				}
+			}
+		}
+	}
+
+	movie.SyncedWithTmdb = true
+
 	return movie, nil
 }
 
@@ -119,16 +124,19 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int) (*models.Movie, er
 		return nil, err
 	}
 
-	movie.TmdbID = tmdbID
+	movie.TmdbID = uint(tmdbID)
 
-	svc.SyncMovie(&movie)
-
-	err = svc.db.Save(movie).Error
+	syncedMovie, err := svc.SyncMovie(&movie)
 	if err != nil {
 		return nil, err
 	}
 
-	return &movie, nil
+	err = svc.db.Save(syncedMovie).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return syncedMovie, nil
 }
 
 func NewMovieService(db *gorm.DB, tmdbService *tmdb.Service) *MovieService {

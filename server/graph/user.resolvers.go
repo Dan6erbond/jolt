@@ -15,7 +15,8 @@ import (
 
 // AddToWatchlist is the resolver for the addToWatchlist field.
 func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error) {
-	if input.MediaType == model.MediaTypeMovie {
+	switch input.MediaType {
+	case model.MediaTypeMovie:
 		var movie models.Movie
 		tx := r.db.FirstOrCreate(&movie, "tmdb_id = ?", input.TmdbID)
 
@@ -23,11 +24,13 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 			return nil, tx.Error
 		}
 
+		//nolint:revive
 		tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		movie.TmdbID = int(tmdbId)
+
+		movie.TmdbID = uint(tmdbId)
 
 		tx = r.db.Save(&movie)
 		if tx.Error != nil {
@@ -48,7 +51,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 		err = r.db.Model(&user).Association("Watchlist").Append(&models.Watchlist{
 			MediaType: "movies",
-			MediaID:   int(movie.ID),
+			MediaID:   movie.ID,
 		})
 
 		if err != nil {
@@ -56,9 +59,11 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 		}
 
 		return &movie, nil
+	case model.MediaTypeTv:
+		panic("media type TV not implemented")
+	default:
+		panic("media type TV not implemented")
 	}
-
-	panic("media type TV not implemented")
 }
 
 // Me is the resolver for the me field.
@@ -88,18 +93,23 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 // Watchlist is the resolver for the watchlist field.
 func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error) {
 	var medias []model.Media
+	//nolint:wsl
 	var watchlist []models.Watchlist
+
 	err := r.db.Model(obj).Association("Watchlist").Find(&watchlist)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, item := range watchlist {
 		if item.MediaType == "movies" {
 			var movie models.Movie
+
 			err = r.db.First(&movie, item.MediaID).Error
 			if err != nil {
 				return nil, err
 			}
+
 			medias = append(medias, movie)
 		} else {
 			panic("media type TV not yet implemented")

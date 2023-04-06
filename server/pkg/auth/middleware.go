@@ -16,7 +16,7 @@ type contextKey struct {
 	name string
 }
 
-func Middleware(as *AuthService) func(http.Handler) http.Handler {
+func Middleware(as *Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, ok := r.Header["Authorization"]
@@ -54,6 +54,6 @@ func ForContext(ctx context.Context) *jwt.Token {
 	return raw
 }
 
-func RegisterMiddleware(router *mux.Router, as *AuthService) {
+func RegisterMiddleware(router *mux.Router, as *Service) {
 	router.Use(Middleware(as))
 }

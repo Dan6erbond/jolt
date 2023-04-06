@@ -15,12 +15,12 @@ import (
 
 type Resolver struct {
 	db             *gorm.DB
-	authService    *auth.AuthService
+	authService    *auth.Service
 	jellyfinClient *jellyfin.Client
 	movieService   *services.MovieService
 	tmdbService    *tmdb.Service
 }
 
-func NewResolver(db *gorm.DB, as *auth.AuthService, jc *jellyfin.Client, movieService *services.MovieService, tmdbService *tmdb.Service) *Resolver {
+func NewResolver(db *gorm.DB, as *auth.Service, jc *jellyfin.Client, movieService *services.MovieService, tmdbService *tmdb.Service) *Resolver {
 	return &Resolver{db, as, jc, movieService, tmdbService}
 }

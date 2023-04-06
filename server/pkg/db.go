@@ -25,21 +25,35 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 	)
 	log := zapgorm.New(logger)
 	log.SetAsDefault()
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: log,
 	})
 	if err != nil {
 		panic(err)
 	}
+
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			logger.Info("Migrating models")
-			db.AutoMigrate(&models.User{})
-			db.AutoMigrate(&models.RefreshToken{})
-			db.AutoMigrate(&models.Movie{})
-			db.AutoMigrate(&models.MovieReview{})
-			db.AutoMigrate(&models.Watchlist{})
-			db.AutoMigrate(&models.Recommendation{})
+			if err := db.AutoMigrate(&models.User{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.RefreshToken{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Movie{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Review{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Watchlist{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Recommendation{}); err != nil {
+				logger.Error(err.Error())
+			}
 			return nil
 		},
 	})

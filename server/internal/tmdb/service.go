@@ -15,7 +15,7 @@ var (
 )
 
 type Service struct {
-	tmdbApiKey string
+	tmdbAPIKey string
 }
 
 func (tmdbSvc *Service) SearchMulti(query string) (*SearchMulti, error) {
@@ -25,10 +25,10 @@ func (tmdbSvc *Service) SearchMulti(query string) (*SearchMulti, error) {
 	}
 
 	urlQuery := u.Query()
-	urlQuery.Add("api_key", tmdbSvc.tmdbApiKey)
+	urlQuery.Add("api_key", tmdbSvc.tmdbAPIKey)
 	urlQuery.Add("query", query)
 
-	u.Path = u.Path + "/search/multi"
+	u.Path += "/search/multi"
 	u.RawQuery = urlQuery.Encode()
 
 	resp, err := http.Get(u.String())
@@ -40,10 +40,12 @@ func (tmdbSvc *Service) SearchMulti(query string) (*SearchMulti, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result SearchMulti
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
@@ -54,7 +56,7 @@ func (tmdbSvc *Service) DiscoverMovie() (*DiscoverMovie, error) {
 	}
 
 	query := u.Query()
-	query.Set("api_key", tmdbSvc.tmdbApiKey)
+	query.Set("api_key", tmdbSvc.tmdbAPIKey)
 
 	u.Path = path.Join(u.Path, "/discover/movie")
 	u.RawQuery = query.Encode()
@@ -68,10 +70,12 @@ func (tmdbSvc *Service) DiscoverMovie() (*DiscoverMovie, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result DiscoverMovie
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
@@ -82,9 +86,9 @@ func (tmdbSvc *Service) DiscoverTV() (*DiscoverTV, error) {
 	}
 
 	query := u.Query()
-	query.Add("api_key", tmdbSvc.tmdbApiKey)
+	query.Add("api_key", tmdbSvc.tmdbAPIKey)
 
-	u.Path = u.Path + "/discover/tv"
+	u.Path += "/discover/tv"
 	u.RawQuery = query.Encode()
 
 	resp, err := http.Get(u.String())
@@ -96,10 +100,12 @@ func (tmdbSvc *Service) DiscoverTV() (*DiscoverTV, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result DiscoverTV
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
@@ -110,9 +116,9 @@ func (tmdbSvc *Service) Movie(id string) (*Movie, error) {
 	}
 
 	query := u.Query()
-	query.Add("api_key", tmdbSvc.tmdbApiKey)
+	query.Add("api_key", tmdbSvc.tmdbAPIKey)
 
-	u.Path = u.Path + "/movie/" + id
+	u.Path += "/movie/" + id
 	u.RawQuery = query.Encode()
 
 	resp, err := http.Get(u.String())
@@ -124,10 +130,12 @@ func (tmdbSvc *Service) Movie(id string) (*Movie, error) {
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result Movie
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
@@ -138,9 +146,9 @@ func (tmdbSvc *Service) MovieReleaseDates(id string) (*MovieReleaseDates, error)
 	}
 
 	query := u.Query()
-	query.Add("api_key", tmdbSvc.tmdbApiKey)
+	query.Add("api_key", tmdbSvc.tmdbAPIKey)
 
-	u.Path = u.Path + "/movie/" + id + "/release_dates"
+	u.Path += "/movie/" + id + "/release_dates"
 	u.RawQuery = query.Encode()
 
 	resp, err := http.Get(u.String())
@@ -152,14 +160,16 @@ func (tmdbSvc *Service) MovieReleaseDates(id string) (*MovieReleaseDates, error)
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result MovieReleaseDates
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
 func NewTMDBService() *Service {
 	apikey := viper.GetString("tmdb.apikey")
-	return &Service{tmdbApiKey: apikey}
+	return &Service{tmdbAPIKey: apikey}
 }

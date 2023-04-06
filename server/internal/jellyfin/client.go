@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	//nolint:gosec
 	BaseToken  = "MediaBrowser Client=\"Jolt\", Device=\"server\", DeviceId=\"1\", Version=\"0.0.1\""
 	EmptyToken = BaseToken + ", Token=\"\""
 )
@@ -32,27 +33,33 @@ func (jc *Client) AuthenticateUserByName(username string, password string) (*Aut
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(data))
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", EmptyToken)
 
 	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result AuthenticateUserByNameResult
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
@@ -69,27 +76,32 @@ func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*
 	u.Path = fmt.Sprintf("/Users/%s/Items", userID)
 	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
 
 	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
 	var result AuthenticateUserByNameResult
+
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 

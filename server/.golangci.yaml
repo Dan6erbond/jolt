@@ -1,0 +1,42 @@
+run:
+  skip-files:
+    - graph/generated/generated.go
+    - graph/model/models_gen.go
+linters:
+  enable:
+    - bodyclose
+    - dupl
+    - durationcheck
+    - errchkjson
+    - errname
+    - exhaustive
+    - goconst
+    - gocritic
+    - gofmt
+    - goimports
+    - gomnd
+    - gosec
+    - importas
+    - loggercheck
+    - misspell
+    - nestif
+    - nilerr
+    - nilnil
+    - prealloc
+    - predeclared
+    - promlinter
+    - reassign
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - tenv
+    - testableexamples
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - wastedassign
+    - whitespace
+    - wsl
+linters-settings:
+  misspell:
+    locale: US

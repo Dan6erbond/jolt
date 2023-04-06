@@ -10,5 +10,6 @@ type RefreshToken struct {
 	gorm.Model
 	ExpiresAt time.Time
 	Revoked   bool
-	UserID    int
+	UserID    uint
+	User      User
 }

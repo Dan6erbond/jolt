@@ -21,12 +21,16 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 	}
 
 	if input.MediaType == model.MediaTypeMovie {
+		//nolint:revive
 		tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 
 		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+		if err != nil {
+			return nil, err
+		}
 
 		recommendationForID, err := strconv.ParseInt(input.RecommendationForUserID, 10, 64)
 		if err != nil {
@@ -35,9 +39,9 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 		recommendation := models.Recommendation{
 			Message:             input.Message,
-			RecommendationByID:  int(user.ID),
-			RecommendationForID: int(recommendationForID),
-			MediaID:             int(movie.ID),
+			RecommendationByID:  user.ID,
+			RecommendationForID: uint(recommendationForID),
+			MediaID:             movie.ID,
 			MediaType:           "movies",
 		}
 
@@ -48,6 +52,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 		return &recommendation, nil
 	}
+
 	panic("media type TV not yet implemented")
 }
 
@@ -55,12 +60,15 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommendation) (model.Media, error) {
 	if obj.MediaType == "movies" {
 		var movie models.Movie
+
 		err := r.db.First(&movie, obj.MediaID).Error
 		if err != nil {
 			return nil, err
 		}
+
 		return &movie, nil
 	}
+
 	panic("media type TV not yet implemented")
 }
 

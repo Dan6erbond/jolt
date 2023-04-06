@@ -6,8 +6,8 @@ import (
 
 type Watchlist struct {
 	gorm.Model
-	MediaID   int
+	MediaID   uint
 	MediaType string
-	UserID    int
+	UserID    uint
 	User      User
 }

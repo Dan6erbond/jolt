@@ -2,8 +2,8 @@ type Movie {
   id: ID!
   tmdbId: ID!
   rating: Float!
-  reviews: [MovieReview!]!
-  userReview: MovieReview @loggedIn
+  reviews: [Review!]!
+  userReview: Review @loggedIn
   availableOnJellyfin: Boolean!
   title: String!
   tagline: String!
@@ -14,21 +14,11 @@ type Movie {
   releaseDate: Time!
 }
 
-type MovieReview {
-  id: ID!
-  movie: Movie!
-  review: String!
-  rating: Float!
-  upbolts: Int!
-  upboltedByCurrentUser: Boolean! @loggedIn
-  createdBy: User!
-}
-
 extend type Query {
   movie(id: ID, tmdbId: ID): Movie!
 }
 
 extend type Mutation {
-  rateMovie(tmdbId: ID!, rating: Float!): MovieReview! @loggedIn
-  reviewMovie(tmdbId: ID!, review: String!): MovieReview! @loggedIn
+  rateMovie(tmdbId: ID!, rating: Float!): Review! @loggedIn
+  reviewMovie(tmdbId: ID!, review: String!): Review! @loggedIn
 }

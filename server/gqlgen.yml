@@ -76,11 +76,9 @@ models:
         resolver: true
       recommendationFor:
         resolver: true
-  MovieReview:
+  Review:
     fields:
       createdBy:
-        resolver: true
-      movie:
         resolver: true
   Movie:
     fields:

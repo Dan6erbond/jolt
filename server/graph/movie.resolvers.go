@@ -13,9 +13,14 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
+const (
+	MaxReview = 5
+	MinReview = 1
+)
+
 // Rating is the resolver for the rating field.
 func (r *movieResolver) Rating(ctx context.Context, obj *models.Movie) (float64, error) {
-	var ratings []models.MovieReview
+	var ratings []models.Review
 
 	err := r.db.Model(&obj).Association("Reviews").Find(&ratings)
 
@@ -23,14 +28,22 @@ func (r *movieResolver) Rating(ctx context.Context, obj *models.Movie) (float64,
 		return 0, err
 	}
 
-	var sum float64
+	var (
+		sum        float64
+		numRatings int64
+	)
+	//nolint:wsl
 	for _, val := range ratings {
+		if val.Rating == 0 {
+			continue
+		}
 		sum += val.Rating
+		numRatings++
 	}
 
 	var rating float64
 	if sum > 0 {
-		rating = sum / float64(len(ratings))
+		rating = sum / float64(numRatings)
 	} else {
 		rating = 0
 	}
@@ -38,8 +51,8 @@ func (r *movieResolver) Rating(ctx context.Context, obj *models.Movie) (float64,
 }
 
 // Reviews is the resolver for the reviews field.
-func (r *movieResolver) Reviews(ctx context.Context, obj *models.Movie) ([]*models.MovieReview, error) {
-	var reviews []*models.MovieReview
+func (r *movieResolver) Reviews(ctx context.Context, obj *models.Movie) ([]*models.Review, error) {
+	var reviews []*models.Review
 
 	err := r.db.Model(&obj).Association("Reviews").Find(&reviews)
 
@@ -51,14 +64,14 @@ func (r *movieResolver) Reviews(ctx context.Context, obj *models.Movie) ([]*mode
 }
 
 // UserReview is the resolver for the userReview field.
-func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*models.MovieReview, error) {
+func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*models.Review, error) {
 	user, err := r.authService.GetUser(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var reviews []models.MovieReview
+	var reviews []models.Review
 
 	err = r.db.Model(&obj).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&reviews)
 
@@ -67,6 +80,7 @@ func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*mod
 	}
 
 	if len(reviews) == 0 {
+		//nolint:nilnil // nil represents null in GraphQL
 		return nil, nil
 	}
 
@@ -83,48 +97,15 @@ func (r *movieResolver) Genres(ctx context.Context, obj *models.Movie) ([]string
 	return []string(obj.Genres), nil
 }
 
-// Movie is the resolver for the movie field.
-func (r *movieReviewResolver) Movie(ctx context.Context, obj *models.MovieReview) (*models.Movie, error) {
-	var movie models.Movie
-	err := r.db.Model(&obj).Association("Movie").Find(&movie)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &movie, nil
-}
-
-// Upbolts is the resolver for the upbolts field.
-func (r *movieReviewResolver) Upbolts(ctx context.Context, obj *models.MovieReview) (int, error) {
-	panic(fmt.Errorf("not implemented: Upbolts - upbolts"))
-}
-
-// UpboltedByCurrentUser is the resolver for the upboltedByCurrentUser field.
-func (r *movieReviewResolver) UpboltedByCurrentUser(ctx context.Context, obj *models.MovieReview) (bool, error) {
-	panic(fmt.Errorf("not implemented: UpboltedByCurrentUser - upboltedByCurrentUser"))
-}
-
-// CreatedBy is the resolver for the createdBy field.
-func (r *movieReviewResolver) CreatedBy(ctx context.Context, obj *models.MovieReview) (*models.User, error) {
-	var createdBy models.User
-	err := r.db.Model(&obj).Association("CreatedBy").Find(&createdBy)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &createdBy, nil
-}
-
 // RateMovie is the resolver for the rateMovie field.
-func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating float64) (*models.MovieReview, error) {
-	if rating > 5 {
+func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating float64) (*models.Review, error) {
+	if rating > MaxReview {
 		return nil, fmt.Errorf("rating cannot be higher than 5 stars")
-	} else if rating < 1 {
+	} else if rating < MinReview {
 		return nil, fmt.Errorf("rating must be at least 1 star")
 	}
 
+	//nolint:revive
 	tmdbId, err := strconv.ParseInt(tmdbID, 10, 64)
 	if err != nil {
 		return nil, err
@@ -142,7 +123,7 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 		return nil, err
 	}
 
-	var movieRatings []models.MovieReview
+	var movieRatings []models.Review
 
 	err = r.db.Model(&movie).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&movieRatings)
 
@@ -150,12 +131,13 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 		return nil, err
 	}
 
-	var movieRating models.MovieReview
+	var movieRating models.Review
 	if len(movieRatings) > 0 {
 		movieRating = movieRatings[0]
 	} else {
-		movieRating = models.MovieReview{
-			MovieID:     movie.ID,
+		movieRating = models.Review{
+			MediaID:     movie.ID,
+			MediaType:   "movies",
 			CreatedByID: user.ID,
 		}
 	}
@@ -172,13 +154,14 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 }
 
 // ReviewMovie is the resolver for the reviewMovie field.
-func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, review string) (*models.MovieReview, error) {
+func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, review string) (*models.Review, error) {
 	user, err := r.authService.GetUser(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
+	//nolint:revive
 	tmdbId, err := strconv.ParseInt(tmdbID, 10, 64)
 	if err != nil {
 		return nil, err
@@ -190,7 +173,7 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 		return nil, err
 	}
 
-	var reviews []models.MovieReview
+	var reviews []models.Review
 
 	err = r.db.Model(movie).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&reviews)
 
@@ -198,12 +181,13 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 		return nil, err
 	}
 
-	var movieReview models.MovieReview
+	var movieReview models.Review
 	if len(reviews) > 0 {
 		movieReview = reviews[0]
 	} else {
 		movieReview.CreatedByID = user.ID
-		movieReview.MovieID = movie.ID
+		movieReview.MediaType = "movies"
+		movieReview.MediaID = movie.ID
 	}
 
 	movieReview.Review = review
@@ -227,6 +211,7 @@ func (r *queryResolver) Movie(ctx context.Context, id *string, tmdbID *string) (
 		return nil, gqlerror.Errorf("one of id and tmdbId must be given")
 	}
 
+	//nolint:revive
 	tmdbId, err := strconv.ParseInt(*tmdbID, 10, 64)
 	if err != nil {
 		return nil, err
@@ -243,8 +228,4 @@ func (r *queryResolver) Movie(ctx context.Context, id *string, tmdbID *string) (
 // Movie returns generated.MovieResolver implementation.
 func (r *Resolver) Movie() generated.MovieResolver { return &movieResolver{r} }
 
-// MovieReview returns generated.MovieReviewResolver implementation.
-func (r *Resolver) MovieReview() generated.MovieReviewResolver { return &movieReviewResolver{r} }
-
 type movieResolver struct{ *Resolver }
-type movieReviewResolver struct{ *Resolver }

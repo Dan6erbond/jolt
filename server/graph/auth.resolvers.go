@@ -21,9 +21,9 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 
 	var user models.User
 
-	tx := r.db.FirstOrCreate(&user, "name = ?", res.User.Name)
-	if tx.Error != nil {
-		return nil, tx.Error
+	err = r.db.FirstOrCreate(&user, "name = ?", res.User.Name).Error
+	if err != nil {
+		return nil, err
 	}
 
 	user.Name = res.User.Name
@@ -31,15 +31,16 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 	user.JellyfinAccessToken = res.AccessToken
 	user.JellyfinUserID = res.User.ID
 
-	tx = r.db.Save(user)
-	if tx.Error != nil {
-		return nil, tx.Error
+	err = r.db.Save(user).Error
+	if err != nil {
+		return nil, err
 	}
 
 	_accessToken, err := r.authService.GenerateAccessToken(user)
 	if err != nil {
 		return nil, err
 	}
+
 	accessTokenString, err := r.authService.SignJwtToken(_accessToken)
 	if err != nil {
 		return nil, err
@@ -49,6 +50,7 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 	if err != nil {
 		return nil, err
 	}
+
 	refreshTokenString, err := r.authService.SignJwtToken(refreshToken)
 	if err != nil {
 		return nil, err
@@ -82,21 +84,24 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 	}
 
 	var dbRefreshToken models.RefreshToken
-	tx := r.db.First(&dbRefreshToken, "id = ?", refreshTokenClaims.ID)
-	if tx.Error != nil {
-		return nil, tx.Error
+
+	err = r.db.First(&dbRefreshToken, "id = ?", refreshTokenClaims.ID).Error
+	if err != nil {
+		return nil, err
 	}
 
 	var user models.User
-	tx = r.db.First(&user, dbRefreshToken.UserID)
-	if tx.Error != nil {
-		return nil, tx.Error
+
+	err = r.db.First(&user, dbRefreshToken.UserID).Error
+	if err != nil {
+		return nil, err
 	}
 
 	accessToken, err := r.authService.GenerateAccessToken(user)
 	if err != nil {
 		return nil, err
 	}
+
 	accessTokenString, err := r.authService.SignJwtToken(accessToken)
 	if err != nil {
 		return nil, err
@@ -106,6 +111,7 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 	if err != nil {
 		return nil, err
 	}
+
 	refreshTokenString, err := r.authService.SignJwtToken(newRefreshToken)
 	if err != nil {
 		return nil, err

@@ -5,10 +5,10 @@ import "gorm.io/gorm"
 type Recommendation struct {
 	gorm.Model
 	Message             string
-	RecommendationByID  int
+	RecommendationByID  uint
 	RecommendationBy    User
-	RecommendationForID int
+	RecommendationForID uint
 	RecommendationFor   User
-	MediaID             int
+	MediaID             uint
 	MediaType           string
 }

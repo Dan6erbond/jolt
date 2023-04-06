@@ -9,7 +9,7 @@ import (
 
 type Movie struct {
 	gorm.Model
-	TmdbID                   int
+	TmdbID                   uint
 	SyncedWithTmdb           bool `gorm:"default:false"`
 	Title                    string
 	Tagline                  string
@@ -21,17 +21,7 @@ type Movie struct {
 	CertificationDoesntExist bool             `gorm:"false"`
 	Recommendations          []Recommendation `gorm:"polymorphic:Media;"`
 	Watchlists               []Watchlist      `gorm:"polymorphic:Media;"`
-	Reviews                  []MovieReview
+	Reviews                  []Review         `gorm:"polymorphic:Media;"`
 }
 
 func (m Movie) IsMedia() {}
-
-type MovieReview struct {
-	gorm.Model
-	MovieID     uint
-	Movie       Movie
-	Review      string
-	Rating      float64
-	CreatedByID uint
-	CreatedBy   User
-}
