@@ -84,3 +84,7 @@ models:
     fields:
       reviews:
         resolver: true
+  Tv:
+    fields:
+      reviews:
+        resolver: true

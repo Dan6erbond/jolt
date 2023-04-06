@@ -8,6 +8,10 @@ import (
 	"strconv"
 )
 
+type FeedItem interface {
+	IsFeedItem()
+}
+
 type Media interface {
 	IsMedia()
 }

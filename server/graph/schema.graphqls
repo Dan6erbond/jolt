@@ -8,10 +8,11 @@ type Mutation
 
 scalar Time
 
+directive @format(format: String!) on FIELD
+
 enum MediaType {
   MOVIE
   TV
 }
 
-union Media = Movie
-# union Post = Review
+union Media = Movie | Tv

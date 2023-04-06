@@ -24,6 +24,7 @@ func NewApp() *fx.App {
 			graph.NewResolver,
 			graphql.NewConfig,
 			services.NewMovieService,
+			services.NewTvService,
 		),
 		fx.Invoke(
 			graphql.RegisterRoutes,

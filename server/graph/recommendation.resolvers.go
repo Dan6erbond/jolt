@@ -20,14 +20,38 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 		return nil, err
 	}
 
-	if input.MediaType == model.MediaTypeMovie {
-		//nolint:revive
-		tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
+	//nolint:revive
+	tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	recommendationForID, err := strconv.ParseInt(input.RecommendationForUserID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	switch input.MediaType {
+	case model.MediaTypeMovie:
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 		if err != nil {
 			return nil, err
 		}
 
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+		recommendation := models.Recommendation{
+			Message:             input.Message,
+			RecommendationByID:  user.ID,
+			RecommendationForID: uint(recommendationForID),
+		}
+
+		err = r.db.Model(&movie).Association("Recommendations").Append(&recommendation)
+		if err != nil {
+			return nil, err
+		}
+
+		return &recommendation, nil
+	case model.MediaTypeTv:
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 		if err != nil {
 			return nil, err
 		}
@@ -41,24 +65,23 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 			Message:             input.Message,
 			RecommendationByID:  user.ID,
 			RecommendationForID: uint(recommendationForID),
-			MediaID:             movie.ID,
-			MediaType:           "movies",
 		}
 
-		err = r.db.Create(&recommendation).Error
+		err = r.db.Model(&tv).Association("Recommendations").Append(&recommendation)
 		if err != nil {
 			return nil, err
 		}
 
 		return &recommendation, nil
+	default:
+		panic("unreachable switch clause")
 	}
-
-	panic("media type TV not yet implemented")
 }
 
 // Media is the resolver for the media field.
 func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommendation) (model.Media, error) {
-	if obj.MediaType == "movies" {
+	switch obj.MediaType {
+	case "movies":
 		var movie models.Movie
 
 		err := r.db.First(&movie, obj.MediaID).Error
@@ -67,9 +90,18 @@ func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommen
 		}
 
 		return &movie, nil
-	}
+	case "tvs":
+		var tv models.Tv
 
-	panic("media type TV not yet implemented")
+		err := r.db.First(&tv, obj.MediaID).Error
+		if err != nil {
+			return nil, err
+		}
+
+		return &tv, nil
+	default:
+		panic("unreachable switch clause")
+	}
 }
 
 // RecommendedBy is the resolver for the recommendedBy field.

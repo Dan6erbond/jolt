@@ -46,6 +46,9 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
+	viper.SetDefault("tmdb.country", "US")
+	viper.SetDefault("tmdb.fallbackcountry", "US")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))

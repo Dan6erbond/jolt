@@ -12,3 +12,5 @@ type Recommendation struct {
 	MediaID             uint
 	MediaType           string
 }
+
+func (r Recommendation) IsFeedItem() {}

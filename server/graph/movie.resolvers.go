@@ -13,11 +13,6 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-const (
-	MaxReview = 5
-	MinReview = 1
-)
-
 // Rating is the resolver for the rating field.
 func (r *movieResolver) Rating(ctx context.Context, obj *models.Movie) (float64, error) {
 	var ratings []models.Review
@@ -97,6 +92,28 @@ func (r *movieResolver) Genres(ctx context.Context, obj *models.Movie) ([]string
 	return []string(obj.Genres), nil
 }
 
+// Watched is the resolver for the watched field.
+func (r *movieResolver) Watched(ctx context.Context, obj *models.Movie) (bool, error) {
+	panic(fmt.Errorf("not implemented: Watched - watched"))
+}
+
+// AddedToWatchlist is the resolver for the addedToWatchlist field.
+func (r *movieResolver) AddedToWatchlist(ctx context.Context, obj *models.Movie) (bool, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return false, err
+	}
+
+	movieCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", obj.ID).Association("Watchlist").Count()
+
+	if movieCount > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
 // RateMovie is the resolver for the rateMovie field.
 func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating float64) (*models.Review, error) {
 	if rating > MaxReview {
@@ -134,20 +151,24 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 	var movieRating models.Review
 	if len(movieRatings) > 0 {
 		movieRating = movieRatings[0]
+		movieRating.Rating = rating
+
+		err = r.db.Save(&movieRating).Error
+
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		movieRating = models.Review{
-			MediaID:     movie.ID,
-			MediaType:   "movies",
-			CreatedByID: user.ID,
+			Rating:    rating,
+			CreatedBy: *user,
 		}
-	}
 
-	movieRating.Rating = rating
+		err = r.db.Model(&movie).Association("Reviews").Append(&movieRating)
 
-	err = r.db.Save(&movieRating).Error
-
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &movieRating, nil
@@ -184,18 +205,23 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 	var movieReview models.Review
 	if len(reviews) > 0 {
 		movieReview = reviews[0]
+
+		movieReview.Review = review
+
+		err = r.db.Save(&movieReview).Error
+
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		movieReview.CreatedByID = user.ID
-		movieReview.MediaType = "movies"
-		movieReview.MediaID = movie.ID
-	}
+		movieReview.CreatedBy = *user
+		movieReview.Review = review
 
-	movieReview.Review = review
+		err = r.db.Model(&movie).Association("Reviews").Append(&movieReview)
 
-	err = r.db.Save(&movieReview).Error
-
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &movieReview, nil
@@ -204,7 +230,20 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 // Movie is the resolver for the movie field.
 func (r *queryResolver) Movie(ctx context.Context, id *string, tmdbID *string) (*models.Movie, error) {
 	if id != nil {
-		panic(fmt.Errorf("not implemented: Movie - id"))
+		var movie models.Movie
+
+		//nolint:revive
+		dbID, err := strconv.ParseInt(*tmdbID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		err = r.db.First(&movie, dbID).Error
+		if err != nil {
+			return nil, err
+		}
+
+		return &movie, nil
 	}
 
 	if tmdbID == nil {

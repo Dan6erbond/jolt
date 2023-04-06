@@ -14,16 +14,26 @@ import (
 
 // Media is the resolver for the media field.
 func (r *reviewResolver) Media(ctx context.Context, obj *models.Review) (model.Media, error) {
-	if obj.MediaType == "movies" {
+	switch obj.MediaType {
+	case "movies":
 		var movie models.Movie
 		err := r.db.First(&movie, obj.MediaID).Error
 		if err != nil {
 			return nil, err
 		}
 		return movie, nil
-	}
+	case "tvs":
+		var tv models.Tv
 
-	panic("media type TV not yet implemented")
+		err := r.db.First(&tv, obj.MediaID).Error
+		if err != nil {
+			return nil, err
+		}
+
+		return &tv, nil
+	default:
+		panic("unreachable switch clause")
+	}
 }
 
 // Upbolts is the resolver for the upbolts field.

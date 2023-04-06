@@ -15,33 +15,21 @@ import (
 
 // AddToWatchlist is the resolver for the addToWatchlist field.
 func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//nolint:revive
+	tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		var movie models.Movie
-		tx := r.db.FirstOrCreate(&movie, "tmdb_id = ?", input.TmdbID)
-
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
-
-		//nolint:revive
-		tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		movie.TmdbID = uint(tmdbId)
-
-		tx = r.db.Save(&movie)
-		if tx.Error != nil {
-			return nil, tx.Error
-		}
-
-		user, err := r.authService.GetUser(ctx)
-
-		if err != nil {
-			return nil, err
-		}
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		movieCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Count()
 
@@ -58,11 +46,84 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 			return nil, err
 		}
 
-		return &movie, nil
+		return movie, nil
 	case model.MediaTypeTv:
-		panic("media type TV not implemented")
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+
+		tvCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Count()
+
+		if tvCount > 0 {
+			return nil, fmt.Errorf("tv already added to watchlist")
+		}
+
+		err = r.db.Model(&user).Association("Watchlist").Append(&models.Watchlist{
+			MediaType: "tvs",
+			MediaID:   tv.ID,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		return tv, nil
 	default:
-		panic("media type TV not implemented")
+		panic("unreachable switch clause")
+	}
+}
+
+// RemoveFromWatchlist is the resolver for the removeFromWatchlist field.
+func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//nolint:revive
+	tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	switch input.MediaType {
+	case model.MediaTypeMovie:
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+
+		var watchlists []models.Watchlist
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Find(&watchlists)
+
+		if len(watchlists) == 0 {
+			return nil, fmt.Errorf("movie not in watchlist")
+		}
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Delete(&watchlists)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return movie, nil
+	case model.MediaTypeTv:
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+
+		var watchlists []models.Watchlist
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Find(&watchlists)
+
+		if len(watchlists) == 0 {
+			return nil, fmt.Errorf("tv not in watchlist")
+		}
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Delete(&watchlists)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return tv, nil
+	default:
+		panic("unreachable switch clause")
 	}
 }
 
@@ -102,7 +163,8 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 	}
 
 	for _, item := range watchlist {
-		if item.MediaType == "movies" {
+		switch item.MediaType {
+		case "movies":
 			var movie models.Movie
 
 			err = r.db.First(&movie, item.MediaID).Error
@@ -111,8 +173,15 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 			}
 
 			medias = append(medias, movie)
-		} else {
-			panic("media type TV not yet implemented")
+		case "tvs":
+			var tv models.Tv
+
+			err = r.db.First(&tv, item.MediaID).Error
+			if err != nil {
+				return nil, err
+			}
+
+			medias = append(medias, tv)
 		}
 	}
 	return medias, nil

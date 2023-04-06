@@ -18,4 +18,5 @@ input AddToWatchlistInput {
 
 extend type Mutation {
   addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
+  removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
 }

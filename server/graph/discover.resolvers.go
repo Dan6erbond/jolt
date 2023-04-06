@@ -11,13 +11,10 @@ import (
 
 // DiscoverMovies is the resolver for the discoverMovies field.
 func (r *queryResolver) DiscoverMovies(ctx context.Context) ([]*models.Movie, error) {
-	movie, err := r.tmdbService.DiscoverMovie()
+	return r.movieService.GetTmdbDiscoverMovies()
+}
 
-	if err != nil {
-		return nil, err
-	}
-
-	movies, err := r.movieService.SaveTmdbDiscoverMovies(movie)
-
-	return movies, err
+// DiscoverTvs is the resolver for the discoverTvs field.
+func (r *queryResolver) DiscoverTvs(ctx context.Context) ([]*models.Tv, error) {
+	return r.tvService.GetTmdbDiscoverTv()
 }

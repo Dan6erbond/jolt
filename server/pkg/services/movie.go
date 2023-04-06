@@ -11,8 +11,24 @@ import (
 )
 
 type MovieService struct {
-	db          *gorm.DB
-	tmdbService *tmdb.Service
+	db         *gorm.DB
+	tmdbClient *tmdb.Client
+}
+
+func (svc *MovieService) GetTmdbDiscoverMovies() ([]*models.Movie, error) {
+	movie, err := svc.tmdbClient.DiscoverMovie()
+
+	if err != nil {
+		return nil, err
+	}
+
+	movies, err := svc.SaveTmdbDiscoverMovies(movie)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
 }
 
 func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie) ([]*models.Movie, error) {
@@ -24,20 +40,10 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie) ([]*m
 			return nil, err
 		}
 
-		dbMovie.Title = m.Title
-		dbMovie.BackdropPath = m.BackdropPath
-		dbMovie.PosterPath = m.PosterPath
-
-		dbMovie, err = svc.SyncMovie(dbMovie)
-
-		if err != nil {
-			return nil, err
-		}
-
 		movies[i] = dbMovie
 	}
 
-	err := svc.db.Table("movies").Save(movies).Error
+	err := svc.db.Save(movies).Error
 
 	return movies, err
 }
@@ -47,7 +53,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 		return movie, nil
 	}
 
-	tmdbMovie, err := svc.tmdbService.Movie(fmt.Sprint(movie.TmdbID))
+	tmdbMovie, err := svc.tmdbClient.Movie(fmt.Sprint(movie.TmdbID))
 
 	if err != nil {
 		return nil, err
@@ -57,10 +63,13 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 		movie.Genres = append(movie.Genres, genre.Name)
 	}
 
+	movie.Title = tmdbMovie.Title
 	movie.Tagline = tmdbMovie.Tagline
+	movie.PosterPath = tmdbMovie.PosterPath
+	movie.BackdropPath = tmdbMovie.BackdropPath
 
 	if tmdbMovie.ReleaseDate != "" {
-		releaseDate, err := time.Parse("2006-01-02", tmdbMovie.ReleaseDate)
+		releaseDate, err := time.Parse(tmdb.DateFormat, tmdbMovie.ReleaseDate)
 		if err != nil {
 			return nil, err
 		}
@@ -70,7 +79,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 
 	//nolint:nestif
 	if movie.Certification == "" && !movie.CertificationDoesntExist {
-		releaseDates, err := svc.tmdbService.MovieReleaseDates(fmt.Sprint(movie.TmdbID))
+		releaseDates, err := svc.tmdbClient.MovieReleaseDates(fmt.Sprint(movie.TmdbID))
 		if err != nil {
 			return nil, err
 		}
@@ -78,8 +87,8 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 		if len(releaseDates.Results) == 0 {
 			movie.CertificationDoesntExist = true
 		} else {
-			certificationCountryCode := viper.GetString("tmdb.certificationcountry")
-			fallbackCertificationCountryCode := viper.GetString("tmdb.fallbackcertificationcountry")
+			certificationCountryCode := viper.GetString("tmdb.country")
+			fallbackCertificationCountryCode := viper.GetString("tmdb.fallbackcountry")
 			var (
 				fallbackCertification string
 				certificationFound    bool
@@ -139,6 +148,6 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int) (*models.Movie, er
 	return syncedMovie, nil
 }
 
-func NewMovieService(db *gorm.DB, tmdbService *tmdb.Service) *MovieService {
+func NewMovieService(db *gorm.DB, tmdbService *tmdb.Client) *MovieService {
 	return &MovieService{db, tmdbService}
 }
