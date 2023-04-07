@@ -1,0 +1,9 @@
+jellyfin:
+  host: <your-jellyfin-host>
+db:
+  host: db
+  database: jolt
+tmdb:
+  apikey: <tmdb-api-key>
+  country: US
+  fallbackCountry: US

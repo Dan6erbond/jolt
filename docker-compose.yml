@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jolt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jolt}
+      POSTGRES_DB: ${POSTGRES_DB:-jolt}
+    volumes:
+      - ./.postgres/data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  app:
+    # substitue this for jolt:version in production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # command: "sleep infinity"
+    env_file:
+      - .env
+    environment:
+      GO_ENV: production
+    volumes:
+      - ./config.yaml:/jolt/config.yaml
+    ports:
+      - "5002:5001"
+    depends_on:
+      db:
+        condition: service_healthy

@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "Jolt",
+      "path": "."
+    },
+    {
       "name": "Frontend",
       "path": "./frontend"
     },
