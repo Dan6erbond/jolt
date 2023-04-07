@@ -3,11 +3,9 @@ import {
   ActionIcon,
   Box,
   Button,
-  Card,
   Group,
   Image,
   Paper,
-  Skeleton,
   Space,
   Stack,
   Text,
@@ -15,55 +13,40 @@ import {
   Tooltip,
   useMantineTheme,
 } from "@mantine/core";
-import { useEffect, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import { TbEyeCheck } from "react-icons/tb";
-import { Link } from "react-router-dom";
+import Poster from "../components/poster";
 import { graphql } from "../gql";
-import { useTmdbClient } from "../tmdb/context";
-import { MovieDetails } from "../tmdb/types/movie";
 
-export const MovieCard = ({ tmdbId }: { tmdbId: string }) => {
+interface MediaCardProps {
+  media:
+    | {
+        __typename?: "Tv";
+        id: string;
+        tmdbId: string;
+        name: string;
+        genres: string[];
+        posterPath: string;
+        firstAirDate: string;
+      }
+    | {
+        __typename?: "Movie";
+        id: string;
+        tmdbId: string;
+        title: string;
+        genres: string[];
+        posterPath: string;
+        releaseDate: string;
+      };
+}
+
+export const MediaCard = ({ media }: MediaCardProps) => {
   const theme = useMantineTheme();
-  const tmdbClient = useTmdbClient();
-  const [movieData, setMovieData] = useState<MovieDetails>();
-
-  useEffect(() => {
-    (async () => {
-      const details = await tmdbClient.getMovieDetails({ movieId: tmdbId });
-      setMovieData(details);
-    })();
-  }, [tmdbClient, tmdbId, setMovieData]);
 
   return (
     <Paper p="lg">
       <Group>
-        <Link to={`/movies/${tmdbId}`}>
-          <Card
-            shadow="sm"
-            p="lg"
-            radius="md"
-            withBorder
-            sx={{
-              flexShrink: 0,
-              transition: "transform 0.15s ease",
-              ":hover": { transform: "scale(1.1)" },
-            }}
-          >
-            <Card.Section>
-              <Image
-                src={`https://image.tmdb.org/t/p/original/${movieData?.poster_path}`}
-                height={125}
-                width={2000 * (125 / 3000)}
-                alt={"Avatar: The Way of Water"}
-                withPlaceholder
-                placeholder={
-                  <Skeleton height={125} width={2000 * (125 / 3000)} />
-                }
-              />
-            </Card.Section>
-          </Card>
-        </Link>
+        <Poster model={media} size="sm" />
         <Stack
           sx={{ alignSelf: "stretch", flexGrow: 1 }}
           align="stretch"
@@ -73,13 +56,23 @@ export const MovieCard = ({ tmdbId }: { tmdbId: string }) => {
           <Group sx={{ justifyContent: "space-between" }} align="start">
             <Stack>
               <Title size="h4" color="white">
-                {movieData?.title}{" "}
+                {media.__typename == "Movie"
+                  ? media.title
+                  : media.__typename == "Tv"
+                  ? media.name
+                  : ""}{" "}
                 <Text component="span">
-                  ({movieData?.release_date.split("-")[0]})
+                  (
+                  {media.__typename == "Movie"
+                    ? media.releaseDate.split("-")[0]
+                    : media.__typename == "Tv"
+                    ? media.firstAirDate.split("-")[0]
+                    : ""}
+                  )
                 </Text>
               </Title>
               <Text color={theme.colors.gray[4]}>
-                {movieData?.genres.map((genre) => genre.name).join(", ")}
+                {media.genres.map((genre) => genre).join(", ")}
               </Text>
             </Stack>
             <Tooltip label="Watched">
@@ -120,6 +113,20 @@ const Watchlist = () => {
             ... on Movie {
               id
               tmdbId
+              title
+              tagline
+              releaseDate
+              posterPath
+              genres
+            }
+            ... on Tv {
+              id
+              tmdbId
+              name
+              tagline
+              firstAirDate
+              posterPath
+              genres
             }
           }
         }
@@ -135,8 +142,8 @@ const Watchlist = () => {
       </Group>
       <Space h="lg" />
       <Stack>
-        {data?.me.watchlist.map((movie) => (
-          <MovieCard tmdbId={movie.tmdbId} key={movie.id} />
+        {data?.me.watchlist.map((media) => (
+          <MediaCard media={media} key={media.id} />
         ))}
       </Stack>
     </Box>
