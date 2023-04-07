@@ -11,19 +11,34 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { IconBolt, IconCircleChevronRight } from "@tabler/icons";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Poster from "../components/poster";
-import { useTmdbClient } from "../tmdb/context";
-import { MovieDetails } from "../tmdb/types/movie";
 
 interface RecommendationCardProps {
   recommendation: {
     id: string;
-    media: { __typename?: "Movie" | undefined; id: string; tmdbId: string };
+    media:
+      | {
+          __typename?: "Tv";
+          id: string;
+          tmdbId: string;
+          name: string;
+          genres: string[];
+          posterPath: string;
+          firstAirDate: string;
+        }
+      | {
+          __typename?: "Movie";
+          id: string;
+          tmdbId: string;
+          title: string;
+          genres: string[];
+          posterPath: string;
+          releaseDate: string;
+        };
     message: string;
     recommendedBy: {
-      __typename?: "User" | undefined;
+      __typename?: "User";
       id: string;
       name: string;
     };
@@ -32,29 +47,22 @@ interface RecommendationCardProps {
 
 const RecommendationCard = ({ recommendation }: RecommendationCardProps) => {
   const theme = useMantineTheme();
-  const tmdbClient = useTmdbClient();
-  const [movie, setMovie] = useState<MovieDetails | undefined>();
-
-  useEffect(() => {
-    (async () => {
-      if (recommendation?.media.__typename === "Movie") {
-        const movieDetails = await tmdbClient.getMovieDetails({
-          movieId: recommendation.media.tmdbId,
-        });
-        setMovie(movieDetails);
-      }
-    })();
-  }, [recommendation, tmdbClient, setMovie]);
 
   return (
     <Paper
       component={Link}
-      to={`/movies/${movie?.id}`}
+      to={
+        recommendation.media.__typename == "Movie"
+          ? `/movies/${recommendation.media?.tmdbId}`
+          : recommendation.media.__typename == "Tv"
+          ? `/tv/${recommendation.media?.tmdbId}`
+          : ""
+      }
       p="lg"
       sx={{ ":hover": { backgroundColor: theme.colors.dark[6] } }}
     >
       <Group>
-        <Poster size="xs" model={movie} asLink={false} />
+        <Poster size="xs" model={recommendation.media} asLink={false} />
         <Stack
           sx={{ alignSelf: "stretch", flexGrow: 1 }}
           align="start"
