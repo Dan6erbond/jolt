@@ -12,6 +12,7 @@ import MashUp from "./pages/mash-up";
 import Movie from "./pages/movies/[movieId]";
 import Recommendations from "./pages/recommendations";
 import Search from "./pages/search";
+import Tv from "./pages/tv/[tvId]";
 import Watchlist from "./pages/watchlist";
 import "./styles/main.css";
 import { TmdbClient } from "./tmdb/client";
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
       {
         path: "movies",
         children: [{ path: ":movieId", element: <Movie /> }],
+      },
+      {
+        path: "tv",
+        children: [{ path: ":tvId", element: <Tv /> }],
       },
       {
         path: "search",
