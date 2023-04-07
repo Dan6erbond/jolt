@@ -21,7 +21,7 @@ const Search = () => {
       <Space h="lg" />
       <Flex wrap="wrap" gap="lg">
         {data?.results.map((item) => (
-          <Poster key={item.id} model={item} size="md" />
+          <Poster key={item.id} model={item as any} size="md" />
         ))}
       </Flex>
     </Box>
