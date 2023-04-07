@@ -63,6 +63,7 @@ const Movie = () => {
       query Movie($tmdbId: ID!) {
         movie(tmdbId: $tmdbId) {
           id
+          tmdbId
           title
           tagline
           posterPath
@@ -102,13 +103,13 @@ const Movie = () => {
     `),
   );
 
-  const userRating = data?.movie.userReview?.rating;
+  const userRating = data?.movie?.userReview?.rating;
 
   useEffect(() => {
     userRating && setRating(userRating);
   }, [userRating, setRating]);
 
-  const userReview = data?.movie.userReview?.review;
+  const userReview = data?.movie?.userReview?.review;
 
   useEffect(() => {
     userReview && setReview(userReview);
@@ -171,7 +172,7 @@ const Movie = () => {
   };
 
   const toggleWatchlist = () => {
-    if (!data?.movie.addedToWatchlist) {
+    if (!data?.movie?.addedToWatchlist) {
       client.mutate({
         mutation: graphql(`
           mutation AddToWatchlist($tmdbId: ID!) {
@@ -201,6 +202,10 @@ const Movie = () => {
       });
     }
   };
+
+  if (!data?.movie) {
+    return <></>;
+  }
 
   return (
     <Box>
