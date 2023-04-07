@@ -16,6 +16,20 @@ const Recommendations = () => {
               ... on Movie {
                 id
                 tmdbId
+                title
+                tagline
+                releaseDate
+                posterPath
+                genres
+              }
+              ... on Tv {
+                id
+                tmdbId
+                name
+                tagline
+                firstAirDate
+                posterPath
+                genres
               }
             }
             recommendedBy {
