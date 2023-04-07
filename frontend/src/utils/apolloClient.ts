@@ -18,7 +18,7 @@ export const accessToken = makeVar<string | null>(null);
 export const refreshingTokens = makeVar(false);
 
 const httpLink = createHttpLink({
-  uri: "http://localhost:5001/graphql",
+  uri: import.meta.env.DEV ? "http://localhost:5001/graphql" : "/graphql",
 });
 
 const refreshTokenErrors = [
