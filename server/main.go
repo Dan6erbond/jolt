@@ -42,6 +42,16 @@ func main() {
 		fmt.Println(err.Error())
 	}
 
+	viper.SetDefault("server.enablefrontend", true)
+
+	if err := viper.BindEnv("server.enablefrontend", "JOLT_ENABLE_FRONTEND"); err != nil {
+		fmt.Println(err.Error())
+	}
+
+	if err := viper.BindEnv("server.frontendpath", "JOLT_FRONTEND", "JOLT_FRONTEND_PATH"); err != nil {
+		fmt.Println(err.Error())
+	}
+
 	if err := viper.BindEnv("environment", "GO_ENV"); err != nil {
 		fmt.Println(err.Error())
 	}
