@@ -863,7 +863,7 @@ extend type Query {
 }
 
 extend type Query {
-  movie(id: ID, tmdbId: ID): Movie!
+  movie(id: ID, tmdbId: ID): Movie
 }
 
 extend type Mutation {
@@ -938,7 +938,7 @@ union Media = Movie | Tv
 }
 
 extend type Query {
-  tv(id: ID, tmdbId: ID): Tv!
+  tv(id: ID, tmdbId: ID): Tv
 }
 
 extend type Mutation {
@@ -2891,14 +2891,11 @@ func (ec *executionContext) _Query_movie(ctx context.Context, field graphql.Coll
 	})
 
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*models.Movie)
 	fc.Result = res
-	return ec.marshalNMovie2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx, field.Selections, res)
+	return ec.marshalOMovie2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_movie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2975,14 +2972,11 @@ func (ec *executionContext) _Query_tv(ctx context.Context, field graphql.Collect
 	})
 
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*models.Tv)
 	fc.Result = res
-	return ec.marshalNTv2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTv(ctx, field.Selections, res)
+	return ec.marshalOTv2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTv(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_tv(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6712,6 +6706,8 @@ func (ec *executionContext) _FeedItem(ctx context.Context, sel ast.SelectionSet,
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
+	case models.Recommendation:
+		return ec._Recommendation(ctx, sel, &obj)
 	case *models.Recommendation:
 		if obj == nil {
 			return graphql.Null
@@ -7169,9 +7165,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_movie(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -7192,9 +7185,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_tv(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			}
 
@@ -8384,10 +8374,6 @@ func (ec *executionContext) marshalNMediaType2githubᚗcomᚋdan6erbondᚋjolt�
 	return v
 }
 
-func (ec *executionContext) marshalNMovie2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx context.Context, sel ast.SelectionSet, v models.Movie) graphql.Marshaler {
-	return ec._Movie(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNMovie2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Movie) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -8651,10 +8637,6 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNTv2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTv(ctx context.Context, sel ast.SelectionSet, v models.Tv) graphql.Marshaler {
-	return ec._Tv(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNTv2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTvᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Tv) graphql.Marshaler {
@@ -9064,6 +9046,13 @@ func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalOMovie2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovie(ctx context.Context, sel ast.SelectionSet, v *models.Movie) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Movie(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOReview2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐReview(ctx context.Context, sel ast.SelectionSet, v *models.Review) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -9095,6 +9084,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	}
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTv2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTv(ctx context.Context, sel ast.SelectionSet, v *models.Tv) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Tv(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

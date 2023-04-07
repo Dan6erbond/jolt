@@ -17,7 +17,7 @@ type Movie {
 }
 
 extend type Query {
-  movie(id: ID, tmdbId: ID): Movie!
+  movie(id: ID, tmdbId: ID): Movie
 }
 
 extend type Mutation {

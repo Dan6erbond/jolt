@@ -156,13 +156,12 @@ func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*mo
 		return nil, err
 	}
 
-	//TODO: adapt for Tv
-	_, err = r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return tv, nil
 }
 
 // Rating is the resolver for the rating field.
@@ -251,7 +250,19 @@ func (r *tvResolver) Watched(ctx context.Context, obj *models.Tv) (bool, error) 
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.
 func (r *tvResolver) AddedToWatchlist(ctx context.Context, obj *models.Tv) (bool, error) {
-	panic(fmt.Errorf("not implemented: AddedToWatchlist - addedToWatchlist"))
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return false, err
+	}
+
+	tvCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tv", obj.ID).Association("Watchlist").Count()
+
+	if tvCount > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 // Tv returns generated.TvResolver implementation.

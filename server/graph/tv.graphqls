@@ -16,7 +16,7 @@ type Tv {
 }
 
 extend type Query {
-  tv(id: ID, tmdbId: ID): Tv!
+  tv(id: ID, tmdbId: ID): Tv
 }
 
 extend type Mutation {
