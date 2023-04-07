@@ -12,7 +12,6 @@ interface PosterProps {
         tmdbId: string;
         name: string;
         posterPath: string;
-        backdropPath: string;
       }
     | {
         __typename?: "Movie";
@@ -63,7 +62,13 @@ const Poster = ({ model, size, asLink = true }: PosterProps) => {
           }
           height={height}
           width={width}
-          alt={model?.__typename === "Movie" ? model.title : model?.name}
+          alt={
+            model?.__typename === "Movie"
+              ? model.title
+              : model?.__typename === "Tv"
+              ? model?.name
+              : ""
+          }
           withPlaceholder
           placeholder={<Skeleton height={height} width={width} />}
         />
@@ -78,10 +83,10 @@ const Poster = ({ model, size, asLink = true }: PosterProps) => {
           ? `/${
               model.__typename === "Movie" || isMovie(model)
                 ? "movies"
-                : isTv(model)
+                : model.__typename === "Tv" || isTv(model)
                 ? "tv"
                 : "person"
-            }/${model.__typename === "Movie" ? model.tmdbId : model.id}`
+            }/${model.tmdbId}`
           : "#"
       }
     >
