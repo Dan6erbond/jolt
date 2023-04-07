@@ -10,7 +10,6 @@ import {
 } from "@mantine/core";
 import { IconBolt, IconCircleChevronRight } from "@tabler/icons";
 import { Link } from "react-router-dom";
-import Poster from "./poster";
 
 const ReviewCard = () => {
   return (
@@ -21,7 +20,7 @@ const ReviewCard = () => {
       sx={(theme) => ({ ":hover": { backgroundColor: theme.colors.dark[6] } })}
     >
       <Group>
-        <Poster
+        {/* <Poster
           size="xs"
           model={{
             media_type: "movie",
@@ -30,7 +29,7 @@ const ReviewCard = () => {
             title: "Avatar: The Way of Water",
           }}
           asLink={false}
-        />
+        /> */}
         <Stack
           sx={{ alignSelf: "stretch", flexGrow: 1 }}
           align="start"
