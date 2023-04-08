@@ -140,7 +140,7 @@ export const Home = () => {
       <Space h="lg" />
       <Stack>
         {data?.userFeed.map((item) => (
-          <>
+          <Box key={item.id}>
             <Stack spacing="xs">
               <Group spacing="xs">
                 <Avatar radius="xl" />
@@ -154,7 +154,7 @@ export const Home = () => {
               <RecommendationCard recommendation={item} />
             </Stack>
             <Divider color={theme.colors.gray[7]} />
-          </>
+          </Box>
         ))}
       </Stack>
     </Box>
