@@ -9,6 +9,8 @@ jobs:
   conventional-commits:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
       - name: Conventional Changelog Action
         uses: TriPSs/conventional-changelog-action@v3
         with:
