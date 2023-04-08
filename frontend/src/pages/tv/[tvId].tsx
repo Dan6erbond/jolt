@@ -464,7 +464,7 @@ const Tv = () => {
           </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="reviews" pt="lg">
-          <Stack spacing="md" px="md">
+          <Stack spacing="xl" px="md">
             <Card
               shadow="sm"
               p="lg"
@@ -503,31 +503,33 @@ const Tv = () => {
                 </Stack>
               </Form>
             </Card>
-            {data?.tv.reviews
-              .filter((review) => review.createdBy.id !== myIdData?.me.id)
-              .map((review) => (
-                <Box key={review.id}>
-                  <Group>
-                    <Stack sx={{ flex: 1 }}>
-                      <Text color="white" sx={{ wordWrap: "normal" }}>
-                        {review.review}
-                      </Text>
-                      <Group>
-                        <Rating value={2} readOnly />
-                        <Avatar radius="xl">
-                          {review.createdBy.name
-                            .split(" ")
-                            .map((name) => name[0].toUpperCase())
-                            .join("")}
-                        </Avatar>
-                        <Text color="white">{review.createdBy.name}</Text>
-                      </Group>
-                    </Stack>
-                  </Group>
-                  <Space h="sm" />
-                  <Divider size="sm" color={theme.colors.dark[3]} />
-                </Box>
-              ))}
+            <Stack spacing="md">
+              {data?.tv.reviews
+                .filter((review) => review.createdBy.id !== myIdData?.me.id)
+                .map((review) => (
+                  <Box key={review.id}>
+                    <Group>
+                      <Stack sx={{ flex: 1 }}>
+                        <Text color="white" sx={{ wordWrap: "normal" }}>
+                          {review.review}
+                        </Text>
+                        <Group>
+                          <Rating value={2} readOnly />
+                          <Avatar radius="xl">
+                            {review.createdBy.name
+                              .split(" ")
+                              .map((name) => name[0].toUpperCase())
+                              .join("")}
+                          </Avatar>
+                          <Text color="white">{review.createdBy.name}</Text>
+                        </Group>
+                      </Stack>
+                    </Group>
+                    <Space h="sm" />
+                    <Divider size="sm" color={theme.colors.dark[3]} />
+                  </Box>
+                ))}
+            </Stack>
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="comments" pt="xs">
