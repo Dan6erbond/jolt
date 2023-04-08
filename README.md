@@ -24,7 +24,7 @@ Jolt brings the users of your media server together in one place. With profiles 
 
 Jolt uses the modern approach, by separating frontend and backend. The frontend is implemented in React, using Mantine for UI, and Apollo Client for state management and GraphQL requests. This powerful combination enables a slick frontend app that looks great on desktop and mobile devices.
 
-The backend is implemented using Golang. It uses the uber/fx library for dependency injection, GORM and Viper for configuration.
+The backend is implemented using Golang. It uses the uber/fx library for dependency injection, GORM, GQLGen and Viper for configuration.
 
 ## Deployment
 
@@ -44,6 +44,16 @@ The Dockerfile compiles the frontend using Vite, and includes the files in a sin
 ## Contributing
 
 🚧 Work in Progress!
+
+### Development
+
+The React app uses Vite as a dev server and for builds. Run `yarn dev` to start the dev server which supports HMR 🔥 and uses the `vite-plugin-graphql-codegen` to generate GraphQL type definitions.
+
+In order to generate GraphQL types, the backend server must be running at port 5001.
+
+The backend uses dev containers to isolate the Go development environment and enable easy networking with Postgres without needing to reserve port 5432. VSCode should detect the dev container configuration files in the `server` directory once opened, and prompt you to build the dev container and open VSCode in it.
+
+Run `go run main.go` to start the server whenever changes are made. The GraphQL resolvers can be regenerated using `go generate ./...`.
 
 ## License
 
