@@ -1,8 +1,9 @@
-import { useApolloClient, useQuery, useReactiveVar } from "@apollo/client";
+import { useQuery, useReactiveVar } from "@apollo/client";
 import {
   AppShell,
   Autocomplete,
   Avatar,
+  Box,
   Button,
   Group,
   Menu,
@@ -15,7 +16,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import {
   TbHome,
@@ -25,25 +26,66 @@ import {
   TbUser,
   TbUserPlus,
 } from "react-icons/tb";
-import { Form, Link, Outlet, useNavigate } from "react-router-dom";
+import { Form, Link, LinkProps, Outlet, useNavigate } from "react-router-dom";
 import { graphql } from "../../gql";
-import { useTmdbClient } from "../../tmdb/context";
-import { Movie } from "../../tmdb/types/movie";
-import { MultiSearchResultItem } from "../../tmdb/types/multiSearch";
-import { Person } from "../../tmdb/types/person";
-import { Tv } from "../../tmdb/types/tv";
-import { isMovie } from "../../tmdb/utils/isMovie";
+import { useSearch } from "../../hooks/useSearch";
 import { loggedIn, sessionError } from "../../utils/apolloClient";
+import Poster from "../poster";
 
-export type SearchResultItemProps =
-  | (Tv & Omit<SelectItemProps, "id">)
-  | (Movie & Omit<SelectItemProps, "id">)
-  | (Person & Omit<SelectItemProps, "id">);
+type SearchResultItemProps = LinkProps &
+  SelectItemProps &
+  (
+    | {
+        __typename?: "Tv";
+        id: string;
+        tmdbId: string;
+        name: string;
+        posterPath: string;
+      }
+    | {
+        __typename?: "Movie";
+        id: string;
+        tmdbId: string;
+        title: string;
+        posterPath: string;
+      }
+  );
+
+const SearchResultItem = forwardRef<HTMLAnchorElement, SearchResultItemProps>(
+  (
+    {
+      __typename,
+      id,
+      posterPath,
+      label,
+      tmdbId,
+      ...others
+    }: SearchResultItemProps,
+    ref,
+  ) => (
+    <Link
+      ref={ref}
+      {...others}
+      to={__typename == "Movie" ? `/movies/${tmdbId}` : `/tv/${tmdbId}`}
+    >
+      <Group noWrap>
+        <Poster
+          model={{ ...others, __typename, id, posterPath, tmdbId } as any}
+          asLink={false}
+          size="sm"
+        />
+
+        <Box>
+          <Text color="white">{label}</Text>
+        </Box>
+      </Group>
+    </Link>
+  ),
+);
 
 const AppLayout = () => {
   const navigate = useNavigate();
   const theme = useMantineTheme();
-  const tmdbClient = useTmdbClient();
 
   const _sessionError = useReactiveVar(sessionError);
   const _loggedIn = useReactiveVar(loggedIn);
@@ -59,6 +101,8 @@ const AppLayout = () => {
     `),
   );
 
+  const [loadSearch, { data: searchData }] = useSearch();
+
   useEffect(() => {
     if (_sessionError === "REFRESH_TOKEN_EXPIRED" || !_loggedIn) {
       navigate("/login");
@@ -66,22 +110,16 @@ const AppLayout = () => {
   }, [_sessionError, _loggedIn]);
 
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<
-    Array<MultiSearchResultItem> | undefined
-  >();
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   useEffect(() => {
     if (debouncedSearch) {
       (async () => {
-        const { results } = await tmdbClient.multiSearch({
-          query: debouncedSearch,
-        });
-        setResults(results);
+        loadSearch({ variables: { query: debouncedSearch } });
       })();
     }
-  }, [debouncedSearch, setResults, tmdbClient]);
+  }, [debouncedSearch]);
 
   return (
     <AppShell
@@ -209,9 +247,13 @@ const AppLayout = () => {
         <Form method="get" action="/search" style={{ flexGrow: 1 }}>
           <Autocomplete
             data={
-              results?.map((item) =>
-                isMovie(item) ? item.title : item.name,
-              ) || []
+              searchData?.search?.results.map((result) => ({
+                ...result,
+                value: result.tmdbId,
+                label:
+                  result.__typename === "Movie" ? result.title : result.name,
+                group: "TMDB",
+              })) || []
             }
             value={search}
             onChange={(val) => setSearch(val)}
@@ -224,9 +266,12 @@ const AppLayout = () => {
                 color: "white",
                 "::placeholder": { color: theme.colors.gray[4] },
               },
+              separatorLabel: { color: "white" },
             })}
             icon={<TbSearch color={theme.colors.gray[6]} size={16} />}
             name="query"
+            itemComponent={SearchResultItem}
+            filter={(value, item) => true}
           />
         </Form>
         <Menu position="bottom-end">

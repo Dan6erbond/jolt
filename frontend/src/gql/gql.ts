@@ -14,6 +14,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
  */
 const documents = {
     "\n      query Me {\n        me {\n          id\n          name\n        }\n      }\n    ": types.MeDocument,
+    "\n      query Search($query: String!, $page: Int) {\n        search(query: $query, page: $page) {\n          page\n          totalPages\n          totalResults\n          results {\n            __typename\n            ... on Movie {\n              id\n              tmdbId\n              title\n              posterPath\n            }\n            ... on Tv {\n              id\n              tmdbId\n              name\n              posterPath\n            }\n          }\n        }\n      }\n    ": types.SearchDocument,
     "\n      query Discover {\n        discoverMovies {\n          id\n          tmdbId\n          title\n          posterPath\n          backdropPath\n        }\n        discoverTvs {\n          id\n          tmdbId\n          name\n          posterPath\n          backdropPath\n        }\n      }\n    ": types.DiscoverDocument,
     "\n      query UserFeed {\n        userFeed {\n          ... on Recommendation {\n            id\n            media {\n              ... on Movie {\n                id\n                tmdbId\n                title\n                tagline\n                releaseDate\n                posterPath\n                genres\n              }\n              ... on Tv {\n                id\n                tmdbId\n                name\n                tagline\n                firstAirDate\n                posterPath\n                genres\n              }\n            }\n            recommendedBy {\n              id\n              name\n            }\n            message\n          }\n        }\n      }\n    ": types.UserFeedDocument,
     "\n        mutation Login($input: SignInWithJellyfinInput!) {\n          signInWithJellyfin(input: $input) {\n            accessToken\n            refreshToken\n          }\n        }\n      ": types.LoginDocument,
@@ -49,6 +50,10 @@ export function graphql(source: string): unknown;
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n      query Me {\n        me {\n          id\n          name\n        }\n      }\n    "): (typeof documents)["\n      query Me {\n        me {\n          id\n          name\n        }\n      }\n    "];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      query Search($query: String!, $page: Int) {\n        search(query: $query, page: $page) {\n          page\n          totalPages\n          totalResults\n          results {\n            __typename\n            ... on Movie {\n              id\n              tmdbId\n              title\n              posterPath\n            }\n            ... on Tv {\n              id\n              tmdbId\n              name\n              posterPath\n            }\n          }\n        }\n      }\n    "): (typeof documents)["\n      query Search($query: String!, $page: Int) {\n        search(query: $query, page: $page) {\n          page\n          totalPages\n          totalResults\n          results {\n            __typename\n            ... on Movie {\n              id\n              tmdbId\n              title\n              posterPath\n            }\n            ... on Tv {\n              id\n              tmdbId\n              name\n              posterPath\n            }\n          }\n        }\n      }\n    "];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
