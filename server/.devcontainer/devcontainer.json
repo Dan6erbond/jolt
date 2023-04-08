@@ -1,0 +1,52 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/go-postgres
+{
+  "name": "Jolt API Devcontainer",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  // Configure tool-specific properties.
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "go.gopath": "/go",
+        "go.goroot": "/usr/local/go"
+      },
+      // Add the IDs of extensions you want installed when the container is created.
+      "extensions": [
+		"golang.Go",
+		"vivaxy.vscode-conventional-commits",
+		"GraphQL.vscode-graphql",
+		"redhat.vscode-yaml",
+		"GitHub.vscode-pull-request-github",
+		"quicktype.quicktype",
+		"ricardoerikson.vscode-go-impl-methods",
+		"esbenp.prettier-vscode"
+	]
+    }
+  },
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [
+    5001
+  ],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  // Modifying the global git config here will not allow VSCode to copy local gitconfig to devcontainer
+  "postCreateCommand": "go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50",
+  // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "vscode",
+  "features": {
+    /* "docker-from-docker": "latest", */
+    /* "kubectl-helm-minikube": "latest", */
+    /* "terraform": "latest", */
+    "git": "latest",
+    /* "git-lfs": "latest", */
+    "github-cli": "latest"
+  }
+}

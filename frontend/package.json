@@ -1,0 +1,53 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "lint": "eslint src/**/*.ts src/**/*.tsx",
+    "check-format": "prettier --check .",
+    "generate": "graphql-codegen"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.7.3",
+    "@emotion/react": "^11.10.6",
+    "@fontsource/nunito": "^4.5.11",
+    "@fontsource/righteous": "^4.5.7",
+    "@mantine/carousel": "^6.0.6",
+    "@mantine/core": "^6.0.6",
+    "@mantine/form": "^5.10.0",
+    "@mantine/hooks": "^6.0.6",
+    "@mantine/notifications": "^5.10.0",
+    "@tabler/icons": "^1.119.0",
+    "embla-carousel-react": "^7.1.0",
+    "graphql": "^16.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.7.1",
+    "react-router-dom": "^6.6.1",
+    "swr": "^2.0.0"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^2.16.4",
+    "@graphql-codegen/client-preset": "^1.2.6",
+    "@types/react": "^18.0.26",
+    "@types/react-dom": "^18.0.9",
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
+    "@vitejs/plugin-react": "^3.0.0",
+    "embla-carousel-autoplay": "^7.1.0",
+    "eslint": "^8.37.0",
+    "eslint-config-next": "12.3.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-react": "^7.32.0",
+    "prettier": "^2.7.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.3",
+    "vite": "^4.0.0",
+    "vite-plugin-graphql-codegen": "^3.0.1"
+  }
+}

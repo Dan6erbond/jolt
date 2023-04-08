@@ -1,0 +1,18 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type Query
+
+type Mutation
+
+scalar Time
+
+directive @format(format: String!) on FIELD
+
+enum MediaType {
+  MOVIE
+  TV
+}
+
+union Media = Movie | Tv

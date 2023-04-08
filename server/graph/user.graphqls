@@ -1,0 +1,28 @@
+type User {
+  id: ID!
+  name: String!
+  watchlist: [Media!]!
+  recommendations: [Recommendation!]!
+  recommendationsCreated: [Recommendation!]!
+}
+
+extend type Query {
+  me: User! @loggedIn
+  users: [User!]! @loggedIn
+}
+
+input AddToWatchlistInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+}
+
+input ToggleWatchedInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+}
+
+extend type Mutation {
+  addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
+  removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
+  toggleWatched(input: ToggleWatchedInput!): Media! @loggedIn
+}

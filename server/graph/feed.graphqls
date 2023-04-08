@@ -1,0 +1,5 @@
+union FeedItem = Recommendation
+
+extend type Query {
+  userFeed: [FeedItem!]!
+}

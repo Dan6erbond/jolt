@@ -1,0 +1,5 @@
+""" type Bolt {
+  post: Post!
+  givenBy: User!
+}
+ """

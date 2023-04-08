@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "vivaxy.vscode-conventional-commits",
+    "golang.go",
+    "graphql.vscode-graphql",
+    "redhat.vscode-yaml",
+    "GitHub.vscode-pull-request-github"
+  ]
+}

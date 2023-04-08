@@ -1,0 +1,25 @@
+type Tv {
+  id: ID!
+  tmdbId: ID!
+  rating: Float!
+  reviews: [Review!]!
+  userReview: Review @loggedIn
+  availableOnJellyfin: Boolean!
+  name: String!
+  tagline: String!
+  posterPath: String!
+  backdropPath: String!
+  genres: [String!]!
+  firstAirDate: Time!
+  watched: Boolean! @loggedIn
+  addedToWatchlist: Boolean! @loggedIn
+}
+
+extend type Query {
+  tv(id: ID, tmdbId: ID): Tv
+}
+
+extend type Mutation {
+  rateTv(tmdbId: ID!, rating: Float!): Review! @loggedIn
+  reviewTv(tmdbId: ID!, review: String!): Review! @loggedIn
+}

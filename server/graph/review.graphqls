@@ -1,0 +1,9 @@
+type Review {
+  id: ID!
+  media: Media!
+  review: String!
+  rating: Float!
+  upbolts: Int!
+  upboltedByCurrentUser: Boolean! @loggedIn
+  createdBy: User!
+}

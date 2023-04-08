@@ -1,0 +1,26 @@
+type Movie {
+  id: ID!
+  tmdbId: ID!
+  rating: Float!
+  reviews: [Review!]!
+  userReview: Review @loggedIn
+  availableOnJellyfin: Boolean!
+  title: String!
+  tagline: String!
+  posterPath: String!
+  backdropPath: String!
+  certification: String
+  genres: [String!]!
+  releaseDate: Time!
+  watched: Boolean! @loggedIn
+  addedToWatchlist: Boolean! @loggedIn
+}
+
+extend type Query {
+  movie(id: ID, tmdbId: ID): Movie
+}
+
+extend type Mutation {
+  rateMovie(tmdbId: ID!, rating: Float!): Review! @loggedIn
+  reviewMovie(tmdbId: ID!, review: String!): Review! @loggedIn
+}
