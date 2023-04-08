@@ -15,6 +15,8 @@ FROM node:18 as frontend-builder
 
 WORKDIR /build
 
+ENV DOCKER_BUILD=true
+
 COPY ./frontend/package.json package.json
 COPY ./frontend/yarn.lock yarn.lock
 
