@@ -58,6 +58,11 @@ const Search = () => {
               </Group>
             </Card>
           ))}
+          {searchData?.search.profiles.length === 0 && (
+            <Text color="gray.4">
+              No profiles found for query &apos;{query}&apos;
+            </Text>
+          )}
         </Stack>
       </Stack>
       <Stack>
