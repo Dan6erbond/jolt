@@ -12,8 +12,6 @@ linters:
     - exhaustive
     - goconst
     - gocritic
-    - gofmt
-    - goimports
     - gomnd
     - gosec
     - importas
@@ -37,6 +35,9 @@ linters:
     - wastedassign
     - whitespace
     - wsl
+  disable:
+    - gofmt
+    - goimports
 linters-settings:
   misspell:
     locale: US

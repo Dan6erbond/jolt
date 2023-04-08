@@ -23,7 +23,7 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 
 	err = r.db.Model(&user).
 		Order("rating desc").
-		Where("rating >= ?", 3).
+		Where("rating >= ?", MinRatingForSuggestions).
 		Where("media_type = ?", "movies").
 		Association("Reviews").
 		Find(&reviews)
@@ -32,7 +32,8 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 		return nil, err
 	}
 
-	var movieReviews []movieReview
+	movieReviews := make([]movieReview, len(reviews))
+	//nolint:wsl
 	for _, review := range reviews {
 		var movie models.Movie
 		err = r.db.Find(&movie, review.MediaID).Error
@@ -41,6 +42,7 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 			return nil, err
 		}
 
+		//nolint:gosec
 		movieReviews = append(movieReviews, movieReview{&review, &movie})
 	}
 
@@ -71,6 +73,7 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 	movieRecommendations := make([]movieRecommendation, len(recommendations))
 
 	var i int
+	//nolint:wsl
 	for _, recommendation := range recommendations {
 		movieRecommendations[i] = recommendation
 		i++

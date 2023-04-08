@@ -17,10 +17,13 @@ func (r *reviewResolver) Media(ctx context.Context, obj *models.Review) (model.M
 	switch obj.MediaType {
 	case "movies":
 		var movie models.Movie
+
 		err := r.db.First(&movie, obj.MediaID).Error
+
 		if err != nil {
 			return nil, err
 		}
+
 		return movie, nil
 	case "tvs":
 		var tv models.Tv

@@ -20,9 +20,18 @@ type Resolver struct {
 	tmdbService    *tmdb.Client
 	movieService   *services.MovieService
 	tvService      *services.TvService
+	reviewService  *services.ReviewService
 }
 
-func NewResolver(db *gorm.DB, as *auth.Service, jc *jellyfin.Client, tmdbService *tmdb.Client, movieService *services.MovieService, tvService *services.TvService) *Resolver {
+func NewResolver(
+	db *gorm.DB,
+	as *auth.Service,
+	jc *jellyfin.Client,
+	tmdbService *tmdb.Client,
+	movieService *services.MovieService,
+	tvService *services.TvService,
+	reviewService *services.ReviewService,
+) *Resolver {
 	return &Resolver{
 		db,
 		as,
@@ -30,5 +39,6 @@ func NewResolver(db *gorm.DB, as *auth.Service, jc *jellyfin.Client, tmdbService
 		tmdbService,
 		movieService,
 		tvService,
+		reviewService,
 	}
 }

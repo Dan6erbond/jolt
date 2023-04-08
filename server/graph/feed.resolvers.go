@@ -20,9 +20,13 @@ func (r *queryResolver) UserFeed(ctx context.Context) ([]model.FeedItem, error) 
 
 	var recommendations []models.Recommendation
 
-	r.db.Model(user).Association("Recommendations").Find(&recommendations)
+	err = r.db.Model(user).Association("Recommendations").Find(&recommendations)
 
-	var feedItems []model.FeedItem
+	if err != nil {
+		return nil, err
+	}
+
+	feedItems := make([]model.FeedItem, len(recommendations))
 
 	for _, fi := range recommendations {
 		feedItems = append(feedItems, fi)

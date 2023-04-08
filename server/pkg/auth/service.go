@@ -75,9 +75,11 @@ func (as *Service) ParseAccessToken(tokenString string) (token *jwt.Token, err e
 
 func (as *Service) GetAccessTokenClaims(token *jwt.Token) (*AccessTokenClaims, error) {
 	accessTokenClaims, ok := token.Claims.(*AccessTokenClaims)
+
 	if !ok {
 		return nil, fmt.Errorf("couldn't parse token claims")
 	}
+
 	return accessTokenClaims, nil
 }
 
@@ -85,14 +87,17 @@ func (as *Service) ParseRefreshToken(tokenString string) (token *jwt.Token, err 
 	token, err = jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(viper.GetString("jwtsecret")), nil
 	})
+
 	return token, err
 }
 
 func (as *Service) GetRefreshTokenClaims(token *jwt.Token) (*RefreshTokenClaims, error) {
 	refreshTokenClaims, ok := token.Claims.(*RefreshTokenClaims)
+
 	if !ok {
 		return nil, fmt.Errorf("couldn't parse token claims")
 	}
+
 	return refreshTokenClaims, nil
 }
 
@@ -114,6 +119,7 @@ func (as *Service) ValidateRefreshToken(token *jwt.Token) (valid bool, err error
 		if refreshToken.Revoked {
 			return false, fmt.Errorf("refresh token has been revoked")
 		}
+
 		return true, nil
 	} else if ve, ok := err.(*jwt.ValidationError); ok {
 		//nolint:gocritic

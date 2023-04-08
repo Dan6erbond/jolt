@@ -27,6 +27,7 @@ func NewApp() *fx.App {
 			graphql.NewConfig,
 			services.NewMovieService,
 			services.NewTvService,
+			services.NewReviewService,
 		),
 		fx.Invoke(
 			graphql.RegisterRoutes,
@@ -42,5 +43,6 @@ func NewApp() *fx.App {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
 	)
+
 	return app
 }

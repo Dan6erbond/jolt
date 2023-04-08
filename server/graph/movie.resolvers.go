@@ -42,6 +42,7 @@ func (r *movieResolver) Rating(ctx context.Context, obj *models.Movie) (float64,
 	} else {
 		rating = 0
 	}
+
 	return rating, nil
 }
 
@@ -104,9 +105,9 @@ func (r *movieResolver) Watched(ctx context.Context, obj *models.Movie) (bool, e
 
 	if watchedCount == 0 {
 		return false, nil
-	} else {
-		return true, nil
 	}
+
+	return true, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.
@@ -121,19 +122,13 @@ func (r *movieResolver) AddedToWatchlist(ctx context.Context, obj *models.Movie)
 
 	if movieCount > 0 {
 		return true, nil
-	} else {
-		return false, nil
 	}
+
+	return false, nil
 }
 
 // RateMovie is the resolver for the rateMovie field.
 func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating float64) (*models.Review, error) {
-	if rating > MaxReview {
-		return nil, fmt.Errorf("rating cannot be higher than 5 stars")
-	} else if rating < MinReview {
-		return nil, fmt.Errorf("rating must be at least 1 star")
-	}
-
 	//nolint:revive
 	tmdbId, err := strconv.ParseInt(tmdbID, 10, 64)
 	if err != nil {
@@ -152,36 +147,7 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 		return nil, err
 	}
 
-	var movieRatings []models.Review
-
-	err = r.db.Model(&movie).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&movieRatings)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var movieRating models.Review
-	if len(movieRatings) > 0 {
-		movieRating = movieRatings[0]
-		movieRating.Rating = rating
-
-		err = r.db.Save(&movieRating).Error
-
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		movieRating.CreatedByID = user.ID
-		movieRating.Rating = rating
-
-		err = r.db.Model(&movie).Association("Reviews").Append(&movieRating)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &movieRating, nil
+	return r.reviewService.SaveRating(rating, user, movie)
 }
 
 // ReviewMovie is the resolver for the reviewMovie field.
@@ -204,37 +170,7 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 		return nil, err
 	}
 
-	var reviews []models.Review
-
-	err = r.db.Model(movie).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&reviews)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var movieReview models.Review
-	if len(reviews) > 0 {
-		movieReview = reviews[0]
-
-		movieReview.Review = review
-
-		err = r.db.Save(&movieReview).Error
-
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		movieReview.CreatedByID = user.ID
-		movieReview.Review = review
-
-		err = r.db.Model(&movie).Association("Reviews").Append(&movieReview)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &movieReview, nil
+	return r.reviewService.SaveReview(review, user, movie)
 }
 
 // Movie is the resolver for the movie field.

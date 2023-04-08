@@ -63,5 +63,6 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 			return nil
 		},
 	})
+
 	return db
 }

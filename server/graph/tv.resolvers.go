@@ -15,12 +15,6 @@ import (
 
 // RateTv is the resolver for the rateTv field.
 func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating float64) (*models.Review, error) {
-	if rating > MaxReview {
-		return nil, fmt.Errorf("rating cannot be higher than 5 stars")
-	} else if rating < MinReview {
-		return nil, fmt.Errorf("rating must be at least 1 star")
-	}
-
 	//nolint:revive
 	tmdbId, err := strconv.ParseInt(tmdbID, 10, 64)
 	if err != nil {
@@ -39,37 +33,7 @@ func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating flo
 		return nil, err
 	}
 
-	var ratings []models.Review
-
-	err = r.db.Model(&tv).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&ratings)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var tvRating models.Review
-	if len(ratings) > 0 {
-		tvRating = ratings[0]
-
-		tvRating.Rating = rating
-
-		err = r.db.Save(&tvRating).Error
-
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tvRating.CreatedByID = user.ID
-		tvRating.Rating = rating
-
-		err = r.db.Model(&tv).Association("Reviews").Append(&tvRating)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &tvRating, nil
+	return r.reviewService.SaveRating(rating, user, tv)
 }
 
 // ReviewTv is the resolver for the reviewTv field.
@@ -92,37 +56,7 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 		return nil, err
 	}
 
-	var reviews []models.Review
-
-	err = r.db.Model(tv).Where("created_by_id = ?", user.ID).Association("Reviews").Find(&reviews)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var tvReview models.Review
-	if len(reviews) > 0 {
-		tvReview = reviews[0]
-
-		tvReview.Review = review
-
-		err = r.db.Save(&tvReview).Error
-
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tvReview.CreatedByID = user.ID
-		tvReview.Review = review
-
-		err = r.db.Model(&tv).Association("Reviews").Append(&tvReview)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &tvReview, nil
+	return r.reviewService.SaveReview(review, user, tv)
 }
 
 // Tv is the resolver for the tv field.
@@ -191,6 +125,7 @@ func (r *tvResolver) Rating(ctx context.Context, obj *models.Tv) (float64, error
 	} else {
 		rating = 0
 	}
+
 	return rating, nil
 }
 
@@ -253,9 +188,9 @@ func (r *tvResolver) Watched(ctx context.Context, obj *models.Tv) (bool, error) 
 
 	if watchedCount == 0 {
 		return false, nil
-	} else {
-		return true, nil
 	}
+
+	return true, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.
@@ -270,9 +205,9 @@ func (r *tvResolver) AddedToWatchlist(ctx context.Context, obj *models.Tv) (bool
 
 	if tvCount > 0 {
 		return true, nil
-	} else {
-		return false, nil
 	}
+
+	return false, nil
 }
 
 // Tv returns generated.TvResolver implementation.

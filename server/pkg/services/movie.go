@@ -75,6 +75,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	} else {
 		movie.Title = tmdbMovie.OriginalTitle
 	}
+
 	movie.Tagline = tmdbMovie.Tagline
 	movie.PosterPath = tmdbMovie.PosterPath
 	movie.BackdropPath = tmdbMovie.BackdropPath

@@ -31,6 +31,10 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 	case model.MediaTypeMovie:
 		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
 
+		if err != nil {
+			return nil, err
+		}
+
 		movieCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Count()
 
 		if movieCount > 0 {
@@ -49,6 +53,10 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 		return movie, nil
 	case model.MediaTypeTv:
 		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+
+		if err != nil {
+			return nil, err
+		}
 
 		tvCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Count()
 
@@ -89,9 +97,17 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 	case model.MediaTypeMovie:
 		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
 
+		if err != nil {
+			return nil, err
+		}
+
 		var watchlists []models.Watchlist
 
 		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Find(&watchlists)
+
+		if err != nil {
+			return nil, err
+		}
 
 		if len(watchlists) == 0 {
 			return nil, fmt.Errorf("movie not in watchlist")
@@ -107,9 +123,17 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 	case model.MediaTypeTv:
 		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 
+		if err != nil {
+			return nil, err
+		}
+
 		var watchlists []models.Watchlist
 
 		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Find(&watchlists)
+
+		if err != nil {
+			return nil, err
+		}
 
 		if len(watchlists) == 0 {
 			return nil, fmt.Errorf("tv not in watchlist")
@@ -256,26 +280,33 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 			medias = append(medias, tv)
 		}
 	}
+
 	return medias, nil
 }
 
 // Recommendations is the resolver for the recommendations field.
 func (r *userResolver) Recommendations(ctx context.Context, obj *models.User) ([]*models.Recommendation, error) {
 	var recommendations []*models.Recommendation
+
 	err := r.db.Model(&obj).Association("Recommendations").Find(&recommendations)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return recommendations, nil
 }
 
 // RecommendationsCreated is the resolver for the recommendationsCreated field.
 func (r *userResolver) RecommendationsCreated(ctx context.Context, obj *models.User) ([]*models.Recommendation, error) {
 	var recommendations []*models.Recommendation
+
 	err := r.db.Model(&obj).Association("RecommendationsCreated").Find(&recommendations)
+
 	if err != nil {
 		return nil, err
 	}
+
 	return recommendations, nil
 }
 

@@ -81,6 +81,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 // Media is the resolver for the media field.
 func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommendation) (model.Media, error) {
 	switch obj.MediaType {
+	//nolint:goconst // TODO: find better solution for table names
 	case "movies":
 		var movie models.Movie
 
@@ -90,6 +91,7 @@ func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommen
 		}
 
 		return &movie, nil
+	//nolint:goconst // TODO: find better solution for table names
 	case "tvs":
 		var tv models.Tv
 
@@ -107,20 +109,26 @@ func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommen
 // RecommendedBy is the resolver for the recommendedBy field.
 func (r *recommendationResolver) RecommendedBy(ctx context.Context, obj *models.Recommendation) (*models.User, error) {
 	var user models.User
+
 	err := r.db.First(&user, obj.RecommendationByID).Error
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
 // RecommendationFor is the resolver for the recommendationFor field.
 func (r *recommendationResolver) RecommendationFor(ctx context.Context, obj *models.Recommendation) (*models.User, error) {
 	var user models.User
+
 	err := r.db.First(&user, obj.RecommendationForID).Error
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
