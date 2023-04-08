@@ -63,7 +63,11 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 		movie.Genres = append(movie.Genres, genre.Name)
 	}
 
-	movie.Title = tmdbMovie.Title
+	if tmdbMovie.Title != "" {
+		movie.Title = tmdbMovie.Title
+	} else {
+		movie.Title = tmdbMovie.OriginalTitle
+	}
 	movie.Tagline = tmdbMovie.Tagline
 	movie.PosterPath = tmdbMovie.PosterPath
 	movie.BackdropPath = tmdbMovie.BackdropPath

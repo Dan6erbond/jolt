@@ -33,6 +33,13 @@ type RefreshTokenResult struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type SearchResult struct {
+	Page         int     `json:"page"`
+	Results      []Media `json:"results"`
+	TotalPages   int     `json:"totalPages"`
+	TotalResults int     `json:"totalResults"`
+}
+
 type SignInResult struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`

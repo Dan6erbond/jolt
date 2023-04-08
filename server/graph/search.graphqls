@@ -1,0 +1,10 @@
+type SearchResult {
+  page: Int!
+  results: [Media!]!
+  totalPages: Int!
+  totalResults: Int!
+}
+
+extend type Query {
+  search(query: String!, page: Int): SearchResult!
+}

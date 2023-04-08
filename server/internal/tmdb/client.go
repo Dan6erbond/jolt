@@ -2,6 +2,7 @@ package tmdb
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -49,13 +50,14 @@ func (tmdbClient *Client) DoRequest(u *url.URL, res interface{}) error {
 	return nil
 }
 
-func (tmdbClient *Client) SearchMulti(query string) (*SearchMulti, error) {
+func (tmdbClient *Client) SearchMulti(query string, page int) (*SearchMulti, error) {
 	u, urlQuery, err := tmdbClient.GetURL("/search/multi")
 	if err != nil {
 		return nil, err
 	}
 
 	urlQuery.Add("query", query)
+	urlQuery.Add("page", fmt.Sprint(page))
 
 	u.RawQuery = urlQuery.Encode()
 
