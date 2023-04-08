@@ -319,7 +319,7 @@ const Movie = () => {
           </Form>
         </Stack>
       </Modal>
-      <Box style={{ position: "relative", overflow: "hidden" }}>
+      <Box style={{ position: "relative", overflow: "hidden" }} mih="250px">
         <Image
           src={
             data?.movie &&
