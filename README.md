@@ -1,5 +1,7 @@
 # Jolt
 
+<img src="assets/name.png" width="80%" style="display:block; margin: 30px auto;max-width: 550px;">
+
 The social hub for your media server.
 
 > **Note:** This project is still in very early alpha stages. A lot of features are only lightly tested, and may not even be implemented yet, but there's lots more to come!
