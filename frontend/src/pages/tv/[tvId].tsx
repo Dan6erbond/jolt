@@ -84,6 +84,7 @@ const Tv = () => {
             review
           }
           addedToWatchlist
+          watched
         }
       }
     `),
@@ -173,9 +174,9 @@ const Tv = () => {
     if (!data?.tv?.addedToWatchlist) {
       client.mutate({
         mutation: graphql(`
-          mutation AddToWatchlist($tmdbId: ID!) {
-            addToWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
-              ... on Movie {
+          mutation AddTVToWatchlist($tmdbId: ID!) {
+            addToWatchlist(input: { mediaType: TV, tmdbId: $tmdbId }) {
+              ... on Tv {
                 id
                 addedToWatchlist
               }
@@ -187,9 +188,9 @@ const Tv = () => {
     } else {
       client.mutate({
         mutation: graphql(`
-          mutation RemoveFromWatchlist($tmdbId: ID!) {
-            removeFromWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
-              ... on Movie {
+          mutation RemoveTVFromWatchlist($tmdbId: ID!) {
+            removeFromWatchlist(input: { mediaType: TV, tmdbId: $tmdbId }) {
+              ... on Tv {
                 id
                 addedToWatchlist
               }
@@ -199,6 +200,23 @@ const Tv = () => {
         variables: { tmdbId: tvId! },
       });
     }
+  };
+
+  const toggleWatched = () => {
+    client.mutate({
+      mutation: graphql(`
+        mutation ToggleTVWatched($tmdbId: ID!) {
+          toggleWatched(input: { mediaType: TV, tmdbId: $tmdbId }) {
+            __typename
+            ... on Tv {
+              id
+              watched
+            }
+          }
+        }
+      `),
+      variables: { tmdbId: tvId! },
+    });
   };
 
   if (!data?.tv) {
@@ -368,8 +386,12 @@ const Tv = () => {
                   <Rating value={data?.tv.rating} readOnly size="sm" />
                   <Flex justify="end" gap="sm">
                     <Tooltip label="Watched">
-                      <ActionIcon>
-                        <IconEyeCheck />
+                      <ActionIcon onClick={toggleWatched}>
+                        <IconEyeCheck
+                          color={
+                            data.tv.watched ? theme.colors.yellow[6] : "white"
+                          }
+                        />
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Add to Watchlist">

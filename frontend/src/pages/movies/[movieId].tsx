@@ -86,6 +86,7 @@ const Movie = () => {
             review
           }
           addedToWatchlist
+          watched
         }
       }
     `),
@@ -103,16 +104,16 @@ const Movie = () => {
     `),
   );
 
-  const userRating = data?.movie?.userReview?.rating;
+  const userRating = data?.movie?.userReview?.rating || 0;
 
   useEffect(() => {
-    userRating && setRating(userRating);
+    setRating(userRating);
   }, [userRating, setRating]);
 
-  const userReview = data?.movie?.userReview?.review;
+  const userReview = data?.movie?.userReview?.review || "";
 
   useEffect(() => {
-    userReview && setReview(userReview);
+    setReview(userReview);
   }, [userReview, setReview]);
 
   const [showRecommendationModal, setShowRecommendationModal] =
@@ -175,7 +176,7 @@ const Movie = () => {
     if (!data?.movie?.addedToWatchlist) {
       client.mutate({
         mutation: graphql(`
-          mutation AddToWatchlist($tmdbId: ID!) {
+          mutation AddMovieToWatchlist($tmdbId: ID!) {
             addToWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
               ... on Movie {
                 id
@@ -189,7 +190,7 @@ const Movie = () => {
     } else {
       client.mutate({
         mutation: graphql(`
-          mutation RemoveFromWatchlist($tmdbId: ID!) {
+          mutation RemoveMovieFromWatchlist($tmdbId: ID!) {
             removeFromWatchlist(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
               ... on Movie {
                 id
@@ -201,6 +202,23 @@ const Movie = () => {
         variables: { tmdbId: movieId! },
       });
     }
+  };
+
+  const toggleWatched = () => {
+    client.mutate({
+      mutation: graphql(`
+        mutation ToggleMovieWatched($tmdbId: ID!) {
+          toggleWatched(input: { mediaType: MOVIE, tmdbId: $tmdbId }) {
+            __typename
+            ... on Movie {
+              id
+              watched
+            }
+          }
+        }
+      `),
+      variables: { tmdbId: movieId! },
+    });
   };
 
   if (!data?.movie) {
@@ -392,8 +410,14 @@ const Movie = () => {
                   <Rating value={data?.movie.rating} readOnly size="sm" />
                   <Flex justify="end" gap="sm">
                     <Tooltip label="Watched">
-                      <ActionIcon>
-                        <IconEyeCheck />
+                      <ActionIcon onClick={toggleWatched}>
+                        <IconEyeCheck
+                          color={
+                            data.movie.watched
+                              ? theme.colors.yellow[6]
+                              : "white"
+                          }
+                        />
                       </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Add to Watchlist">
