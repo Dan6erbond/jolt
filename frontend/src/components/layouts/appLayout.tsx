@@ -7,6 +7,7 @@ import {
   Button,
   Divider,
   Group,
+  Loader,
   Menu,
   Navbar,
   ScrollArea,
@@ -17,7 +18,7 @@ import {
   UnstyledButton,
   useMantineTheme,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
+import { getHotkeyHandler, useDebouncedValue } from "@mantine/hooks";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import {
@@ -156,7 +157,7 @@ const AppLayout = () => {
     `),
   );
 
-  const [loadSearch, { data: searchData }] = useSearch();
+  const [loadSearch, { data: searchData, loading }] = useSearch();
 
   useEffect(() => {
     if (_sessionError === "REFRESH_TOKEN_EXPIRED" || !_loggedIn) {
@@ -235,23 +236,23 @@ const AppLayout = () => {
               </svg>
               <span>t</span>
             </Text>
-            <Button
+            {<Button
               component={Link}
               to="/"
-              leftIcon={<TbHome color="white" size={24} />}
+              leftIcon={<TbHome size={24} />}
               variant="subtle"
-              color="gray"
+              color={location.pathname === "/" ? "indigo" : "gray"}
               size="lg"
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
               Home
-            </Button>
+            </Button>}
             <Button
               component={Link}
               to="/discover"
-              leftIcon={<TbPlanet color="white" size={24} />}
+              leftIcon={<TbPlanet color="inherit" size={24} />}
               variant="subtle"
-              color="gray"
+              color={location.pathname === "/discover" ? "indigo" : "gray"}
               size="lg"
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
@@ -260,9 +261,11 @@ const AppLayout = () => {
             <Button
               component={Link}
               to="/recommendations"
-              leftIcon={<TbUserPlus color="white" size={24} />}
+              leftIcon={<TbUserPlus color="inherit" size={24} />}
               variant="subtle"
-              color="gray"
+              color={
+                location.pathname === "/recommendations" ? "indigo" : "gray"
+              }
               size="lg"
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
@@ -271,9 +274,9 @@ const AppLayout = () => {
             <Button
               component={Link}
               to="/mash-up"
-              leftIcon={<TbMovie color="white" size={24} />}
+              leftIcon={<TbMovie color="inherit" size={24} />}
               variant="subtle"
-              color="gray"
+              color={location.pathname === "/mash-up" ? "indigo" : "gray"}
               size="lg"
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
@@ -282,9 +285,9 @@ const AppLayout = () => {
             <Button
               component={Link}
               to="/watchlist"
-              leftIcon={<AiOutlineFieldTime color="white" size={24} />}
+              leftIcon={<AiOutlineFieldTime color="inherit" size={24} />}
               variant="subtle"
-              color="gray"
+              color={location.pathname === "/watchlist" ? "indigo" : "gray"}
               size="lg"
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
@@ -336,6 +339,9 @@ const AppLayout = () => {
               }
               setShowSearch(false);
             }}
+            onKeyDown={getHotkeyHandler([
+              ["escape", () => setShowSearch(false)],
+            ])}
           />
           {showSearch && (
             <Box
@@ -396,7 +402,7 @@ const AppLayout = () => {
                     </Stack>
                   </ScrollArea>
                 ) : (
-                  ""
+                  loading && <Loader variant="dots" color="white" />
                 )
               ) : (
                 <Text color="white">Enter a query</Text>
