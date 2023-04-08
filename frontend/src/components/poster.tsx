@@ -1,8 +1,6 @@
 import { Card, Image, Skeleton } from "@mantine/core";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { isMovie } from "../tmdb/utils/isMovie";
-import { isTv } from "../tmdb/utils/isTv";
 
 interface PosterProps {
   model?:
@@ -81,9 +79,9 @@ const Poster = ({ model, size, asLink = true }: PosterProps) => {
       to={
         model
           ? `/${
-              model.__typename === "Movie" || isMovie(model)
+              model.__typename === "Movie"
                 ? "movies"
-                : model.__typename === "Tv" || isTv(model)
+                : model.__typename === "Tv"
                 ? "tv"
                 : "person"
             }/${model.tmdbId}`
