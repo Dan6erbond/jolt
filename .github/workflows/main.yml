@@ -1,14 +1,15 @@
+name: Bump version, tag commit and generate changelog with conventional commits
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  conventional_commits:
-    name: Bump version, tag commit and generate changelog with conventional commits
-    runs-on: ubuntu-18.04
+  conventional-commits:
+    runs-on: ubuntu-latest
     steps:
-    - name: Conventional Changelog Action
-      uses: TriPSs/conventional-changelog-action@v3
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Conventional Changelog Action
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
