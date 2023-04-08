@@ -15,8 +15,6 @@ import Search from "./pages/search";
 import Tv from "./pages/tv/[tvId]";
 import Watchlist from "./pages/watchlist";
 import "./styles/main.css";
-import { TmdbClient } from "./tmdb/client";
-import TmdbClientProvider from "./tmdb/context";
 import { client } from "./utils/apolloClient";
 import { theme } from "./utils/theme";
 
@@ -65,16 +63,10 @@ const router = createBrowserRouter([
   },
 ]);
 
-const tmdbClient = new TmdbClient({
-  apiKey: import.meta.env.VITE_TMDB_API_KEY,
-});
-
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <ApolloProvider client={client}>
-    <TmdbClientProvider client={tmdbClient}>
-      <MantineProvider withGlobalStyles withNormalizeCSS theme={theme}>
-        <RouterProvider router={router} />
-      </MantineProvider>
-    </TmdbClientProvider>
+    <MantineProvider withGlobalStyles withNormalizeCSS theme={theme}>
+      <RouterProvider router={router} />
+    </MantineProvider>
   </ApolloProvider>,
 );
