@@ -159,10 +159,8 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 			return nil, err
 		}
 	} else {
-		movieRating = models.Review{
-			Rating:    rating,
-			CreatedBy: *user,
-		}
+		movieRating.CreatedByID = user.ID
+		movieRating.Rating = rating
 
 		err = r.db.Model(&movie).Association("Reviews").Append(&movieRating)
 
@@ -214,7 +212,7 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 			return nil, err
 		}
 	} else {
-		movieReview.CreatedBy = *user
+		movieReview.CreatedByID = user.ID
 		movieReview.Review = review
 
 		err = r.db.Model(&movie).Association("Reviews").Append(&movieReview)

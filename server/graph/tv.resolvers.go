@@ -59,10 +59,8 @@ func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating flo
 			return nil, err
 		}
 	} else {
-		tvRating = models.Review{
-			Rating:    rating,
-			CreatedBy: *user,
-		}
+		tvRating.CreatedByID = user.ID
+		tvRating.Rating = rating
 
 		err = r.db.Model(&tv).Association("Reviews").Append(&tvRating)
 
@@ -114,7 +112,7 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 			return nil, err
 		}
 	} else {
-		tvReview.CreatedBy = *user
+		tvReview.CreatedByID = user.ID
 		tvReview.Review = review
 
 		err = r.db.Model(&tv).Association("Reviews").Append(&tvReview)
