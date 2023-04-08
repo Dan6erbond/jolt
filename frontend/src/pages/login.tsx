@@ -42,6 +42,7 @@ const Login = () => {
       `),
       variables: { input: { username, password } },
     });
+    // eslint-disable-next-line no-empty
     if (errors) {
     } else if (data) {
       loggedIn(true);
@@ -132,6 +133,7 @@ const Login = () => {
                       },
                     })}
                     {...form.getInputProps("username")}
+                    autoComplete="username"
                   />
                 </Input.Wrapper>
                 <PasswordInput
@@ -152,6 +154,7 @@ const Login = () => {
                     },
                   })}
                   {...form.getInputProps("password")}
+                  autoComplete="current-password"
                 />
                 <Button
                   variant="gradient"
