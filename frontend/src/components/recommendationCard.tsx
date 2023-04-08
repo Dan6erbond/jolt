@@ -61,72 +61,75 @@ const RecommendationCard = ({ recommendation }: RecommendationCardProps) => {
       p="lg"
       sx={{ ":hover": { backgroundColor: theme.colors.dark[6] } }}
     >
-      <Group>
-        <Poster size="xs" model={recommendation.media} asLink={false} />
-        <Stack
-          sx={{ alignSelf: "stretch", flexGrow: 1 }}
+      <Group align="start">
+        <Poster size="sm" model={recommendation.media} asLink={false} />
+        <Group
+          sx={{
+            alignSelf: "stretch",
+            flex: 1,
+            justifyContent: "space-between",
+          }}
           align="start"
-          p="sm"
-          spacing="xs"
         >
-          <Title size="h4" color="white">
-            {recommendation.media.__typename === "Movie"
-              ? recommendation.media.title
-              : recommendation.media.__typename === "Tv"
-              ? recommendation.media.name
-              : ""}{" "}
-            <Text component="span">
-              (
+          <Stack p="sm" spacing="xs">
+            <Title size="h4" color="white">
               {recommendation.media.__typename === "Movie"
-                ? recommendation.media.releaseDate.substring(0, 4)
+                ? recommendation.media.title
                 : recommendation.media.__typename === "Tv"
-                ? recommendation.media.firstAirDate.substring(0, 4)
+                ? recommendation.media.name
+                : ""}{" "}
+              <Text component="span">
+                (
+                {recommendation.media.__typename === "Movie"
+                  ? recommendation.media.releaseDate.substring(0, 4)
+                  : recommendation.media.__typename === "Tv"
+                  ? recommendation.media.firstAirDate.substring(0, 4)
+                  : ""}
+                )
+              </Text>
+            </Title>
+            <Text color={theme.colors.gray[4]}>
+              {recommendation.media.__typename === "Movie"
+                ? recommendation.media.genres.join(", ")
+                : recommendation.media.__typename === "Tv"
+                ? recommendation.media.genres.join(", ")
                 : ""}
-              )
             </Text>
-          </Title>
-          <Text color={theme.colors.gray[4]}>
-            {recommendation.media.__typename === "Movie"
-              ? recommendation.media.genres.join(", ")
-              : recommendation.media.__typename === "Tv"
-              ? recommendation.media.genres.join(", ")
-              : ""}
-          </Text>
-          <Group>
-            <Group spacing="xs">
-              <Avatar radius="xl">
-                <Avatar radius="xl">
+            <Group>
+              <Group spacing="xs" align="start">
+                <Avatar radius="xl" color="cyan">
                   {recommendation.recommendedBy.name
                     .split(" ")
                     .map((name) => name[0].toUpperCase())
                     .join("")}
                 </Avatar>
-              </Avatar>
-              <Text color={theme.colors.gray[4]}>
-                {recommendation.recommendedBy.name}
-              </Text>
+                <Paper p="md" bg={theme.colors.dark[3]} miw="200px">
+                  <Text color={theme.colors.gray[4]} size="sm">
+                    {recommendation.recommendedBy.name}
+                  </Text>
+                  <Text color="white">{recommendation.message}</Text>
+                </Paper>
+              </Group>
+              <Tooltip label="I'm not implemented yet">
+                <ActionIcon
+                  variant="subtle"
+                  radius="xl"
+                  color="gray"
+                  onClick={(e) => e.preventDefault()}
+                  disabled
+                  size="lg"
+                  sx={{ cursor: "not-allowed" }}
+                >
+                  <IconBolt />
+                </ActionIcon>
+              </Tooltip>
             </Group>
-            <Paper p="sm" radius="lg" bg={theme.colors.dark[5]}>
-              <Text color="white">{recommendation.message}</Text>
-            </Paper>
-            <Tooltip label="I'm not implemented yet">
-              <ActionIcon
-                variant="subtle"
-                radius="xl"
-                color="gray"
-                onClick={(e) => e.preventDefault()}
-                disabled
-                sx={{ cursor: "not-allowed" }}
-              >
-                <IconBolt />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-          <Box h="auto" />
+            <Box h="auto" />
+          </Stack>
           <Group align="end" sx={{ alignSelf: "end" }}>
             <IconCircleChevronRight color={theme.colors.blue[2]} />
           </Group>
-        </Stack>
+        </Group>
       </Group>
     </Paper>
   );
