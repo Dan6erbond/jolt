@@ -20,6 +20,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.50
+          working-directory: server
       - run: go mod download
       - run: go generate ./...
       - run: go build
