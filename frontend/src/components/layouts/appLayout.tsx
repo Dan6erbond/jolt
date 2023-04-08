@@ -1,22 +1,24 @@
 import { useQuery, useReactiveVar } from "@apollo/client";
 import {
+  Anchor,
   AppShell,
-  Autocomplete,
   Avatar,
   Box,
   Button,
+  Divider,
   Group,
   Menu,
   Navbar,
-  SelectItemProps,
+  ScrollArea,
   Space,
   Stack,
   Text,
+  TextInput,
   UnstyledButton,
   useMantineTheme,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import {
   TbHome,
@@ -26,15 +28,21 @@ import {
   TbUser,
   TbUserPlus,
 } from "react-icons/tb";
-import { Form, Link, LinkProps, Outlet, useNavigate } from "react-router-dom";
+import {
+  Form,
+  Link,
+  LinkProps,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { graphql } from "../../gql";
 import { useSearch } from "../../hooks/useSearch";
 import { loggedIn, sessionError } from "../../utils/apolloClient";
 import Poster from "../poster";
 
-type SearchResultItemProps = LinkProps &
-  SelectItemProps &
-  (
+interface SearchResultItemProps extends Omit<LinkProps, "to"> {
+  item:
     | {
         __typename?: "Tv";
         id: string;
@@ -48,44 +56,91 @@ type SearchResultItemProps = LinkProps &
         tmdbId: string;
         title: string;
         posterPath: string;
-      }
-  );
+      };
+}
 
-const SearchResultItem = forwardRef<HTMLAnchorElement, SearchResultItemProps>(
-  (
-    {
-      __typename,
-      id,
-      posterPath,
-      label,
-      tmdbId,
-      ...others
-    }: SearchResultItemProps,
-    ref,
-  ) => (
-    <Link
+export const SearchResultItem = forwardRef<
+  HTMLAnchorElement,
+  SearchResultItemProps
+>(({ item, ...props }: SearchResultItemProps, ref) => (
+  <Anchor
+    component={Link}
+    sx={(theme) => ({
+      borderRadius: theme.radius.md,
+      color: "white",
+      ":hover": {
+        background: theme.colors.dark[6],
+        textDecoration: "none",
+      },
+    })}
+    ref={ref}
+    {...props}
+    to={
+      item.__typename == "Movie"
+        ? `/movies/${item.tmdbId}`
+        : `/tv/${item.tmdbId}`
+    }
+    p="xs"
+  >
+    <Group noWrap>
+      <Poster model={item} asLink={false} size="sm" />
+
+      <Box>
+        <Text>
+          {item.__typename == "Movie"
+            ? item.title
+            : item.__typename == "Tv"
+            ? item.name
+            : ""}
+        </Text>
+      </Box>
+    </Group>
+  </Anchor>
+));
+
+interface SearchProfileItemProps extends Omit<LinkProps, "to"> {
+  profile: { __typename?: "User"; id: string; name: string };
+}
+
+export const SearchProfileItem = forwardRef<
+  HTMLAnchorElement,
+  SearchProfileItemProps
+>(({ profile, ...props }, ref) => {
+  return (
+    <Anchor
+      to={"/users/" + profile.id}
+      component={Link}
+      sx={(theme) => ({
+        borderRadius: theme.radius.md,
+        color: "white",
+        ":hover": {
+          background: theme.colors.dark[6],
+          textDecoration: "none",
+        },
+      })}
+      p="sm"
       ref={ref}
-      {...others}
-      to={__typename == "Movie" ? `/movies/${tmdbId}` : `/tv/${tmdbId}`}
+      {...props}
     >
-      <Group noWrap>
-        <Poster
-          model={{ ...others, __typename, id, posterPath, tmdbId } as any}
-          asLink={false}
-          size="sm"
-        />
-
-        <Box>
-          <Text color="white">{label}</Text>
-        </Box>
+      <Group>
+        <Avatar radius="xl">
+          {profile.name
+            .split(" ")
+            .map((name) => name[0].toUpperCase())
+            .join("")}
+        </Avatar>
+        <Text>{profile.name}</Text>
       </Group>
-    </Link>
-  ),
-);
+    </Anchor>
+  );
+});
 
 const AppLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useMantineTheme();
+
+  const formRef = useRef<HTMLFormElement>(null);
 
   const _sessionError = useReactiveVar(sessionError);
   const _loggedIn = useReactiveVar(loggedIn);
@@ -110,16 +165,21 @@ const AppLayout = () => {
   }, [_sessionError, _loggedIn]);
 
   const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
 
   useEffect(() => {
     if (debouncedSearch) {
       (async () => {
-        loadSearch({ variables: { query: debouncedSearch } });
+        loadSearch({ variables: { query: debouncedSearch } }).then(() =>
+          setShowSearch(true),
+        );
       })();
     }
-  }, [debouncedSearch]);
+  }, [debouncedSearch, setShowSearch]);
+
+  useEffect(() => setShowSearch(false), [location]);
 
   return (
     <AppShell
@@ -244,19 +304,15 @@ const AppLayout = () => {
       })}
     >
       <Group align="center">
-        <Form method="get" action="/search" style={{ flexGrow: 1 }}>
-          <Autocomplete
-            data={
-              searchData?.search?.results.map((result) => ({
-                ...result,
-                value: result.tmdbId,
-                label:
-                  result.__typename === "Movie" ? result.title : result.name,
-                group: "TMDB",
-              })) || []
-            }
+        <Form
+          method="get"
+          action="/search"
+          style={{ flexGrow: 1, position: "relative" }}
+          ref={formRef}
+        >
+          <TextInput
             value={search}
-            onChange={(val) => setSearch(val)}
+            onChange={(ev) => setSearch(ev.target.value)}
             placeholder="Search Jolt"
             radius="xl"
             size="lg"
@@ -270,9 +326,83 @@ const AppLayout = () => {
             })}
             icon={<TbSearch color={theme.colors.gray[6]} size={16} />}
             name="query"
-            itemComponent={SearchResultItem}
-            filter={(value, item) => true}
+            onFocus={() => setShowSearch(true)}
+            onBlur={(event) => {
+              if (
+                // the form element
+                formRef.current!.contains(event.relatedTarget)
+              ) {
+                return;
+              }
+              setShowSearch(false);
+            }}
           />
+          {showSearch && (
+            <Box
+              w="100%"
+              sx={(theme) => ({
+                position: "absolute",
+                marginTop: theme.spacing.sm,
+                borderRadius: theme.radius.md,
+                background: theme.colors.dark[7],
+                boxShadow: theme.shadows.lg,
+                zIndex: 100,
+              })}
+              p="md"
+            >
+              {search !== "" ? (
+                searchData?.search.tmdb.results ||
+                searchData?.search.profiles ? (
+                  <ScrollArea h="80vh">
+                    <Stack spacing="lg">
+                      {searchData?.search.profiles && (
+                        <Stack>
+                          <Group>
+                            <Text color="white" size="sm">
+                              Profiles
+                            </Text>
+                            <Divider color="dark.1" sx={{ flex: 1 }} />
+                          </Group>
+                          {searchData.search.profiles.map((profile, idx) => (
+                            <Stack key={profile.id}>
+                              <SearchProfileItem profile={profile} />
+                              {idx !==
+                                searchData.search!.profiles.length - 1 && (
+                                <Divider color={theme.colors.dark[1]} />
+                              )}
+                            </Stack>
+                          ))}
+                        </Stack>
+                      )}
+                      {searchData?.search.tmdb.results && (
+                        <Stack>
+                          <Group>
+                            <Text color="white" size="sm">
+                              TMDB
+                            </Text>
+                            <Divider color="dark.1" sx={{ flex: 1 }} />
+                          </Group>
+                          {searchData.search.tmdb.results.map((result, idx) => (
+                            <Stack key={result.id}>
+                              <SearchResultItem item={result} />
+                              {idx !==
+                                searchData.search!.tmdb.results.length - 1 && (
+                                <Divider color={theme.colors.dark[1]} />
+                              )}
+                            </Stack>
+                          ))}
+                        </Stack>
+                      )}
+                    </Stack>
+                  </ScrollArea>
+                ) : (
+                  ""
+                )
+              ) : (
+                <Text color="white">Enter a query</Text>
+              )}
+            </Box>
+          )}
         </Form>
         <Menu position="bottom-end">
           <Menu.Target>

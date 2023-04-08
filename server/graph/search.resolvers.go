@@ -5,9 +5,11 @@ package graph
 
 import (
 	"context"
+	"strings"
 
 	"github.com/dan6erbond/jolt-server/graph/model"
 	"github.com/dan6erbond/jolt-server/internal/tmdb"
+	"github.com/dan6erbond/jolt-server/pkg/models"
 )
 
 // Search is the resolver for the search field.
@@ -48,10 +50,17 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 		}
 	}
 
+	var users []*models.User
+
+	r.db.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(query)+"%").Find(&users)
+
 	return &model.SearchResult{
-		Results:      results,
-		Page:         search.Page,
-		TotalPages:   search.TotalPages,
-		TotalResults: search.TotalResults,
+		Tmdb: &model.TMDBSearchResult{
+			Results:      results,
+			Page:         search.Page,
+			TotalPages:   search.TotalPages,
+			TotalResults: search.TotalResults,
+		},
+		Profiles: users,
 	}, nil
 }

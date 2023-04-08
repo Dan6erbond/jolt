@@ -6,22 +6,28 @@ export const useSearch = () =>
     graphql(`
       query Search($query: String!, $page: Int) {
         search(query: $query, page: $page) {
-          page
-          totalPages
-          totalResults
-          results {
-            __typename
-            ... on Movie {
-              id
-              tmdbId
-              title
-              posterPath
-            }
-            ... on Tv {
-              id
-              tmdbId
-              name
-              posterPath
+          profiles {
+            id
+            name
+          }
+          tmdb {
+            page
+            totalPages
+            totalResults
+            results {
+              __typename
+              ... on Movie {
+                id
+                tmdbId
+                title
+                posterPath
+              }
+              ... on Tv {
+                id
+                tmdbId
+                name
+                posterPath
+              }
             }
           }
         }

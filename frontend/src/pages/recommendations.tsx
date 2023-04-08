@@ -3,6 +3,7 @@ import { Box, Group, Space, Stack, Title } from "@mantine/core";
 import { TbUserPlus } from "react-icons/tb";
 import RecommendationCard from "../components/recommendationCard";
 import { graphql } from "../gql";
+
 const Recommendations = () => {
   const { data } = useQuery(
     graphql(`

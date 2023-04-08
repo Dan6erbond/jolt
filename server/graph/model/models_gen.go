@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/dan6erbond/jolt-server/pkg/models"
 )
 
 type FeedItem interface {
@@ -34,10 +36,8 @@ type RefreshTokenResult struct {
 }
 
 type SearchResult struct {
-	Page         int     `json:"page"`
-	Results      []Media `json:"results"`
-	TotalPages   int     `json:"totalPages"`
-	TotalResults int     `json:"totalResults"`
+	Tmdb     *TMDBSearchResult `json:"tmdb"`
+	Profiles []*models.User    `json:"profiles"`
 }
 
 type SignInResult struct {
@@ -48,6 +48,13 @@ type SignInResult struct {
 type SignInWithJellyfinInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type TMDBSearchResult struct {
+	Page         int     `json:"page"`
+	Results      []Media `json:"results"`
+	TotalPages   int     `json:"totalPages"`
+	TotalResults int     `json:"totalResults"`
 }
 
 type MediaType string

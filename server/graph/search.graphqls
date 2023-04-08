@@ -1,8 +1,13 @@
-type SearchResult {
+type TMDBSearchResult {
   page: Int!
   results: [Media!]!
   totalPages: Int!
   totalResults: Int!
+}
+
+type SearchResult {
+  tmdb: TMDBSearchResult!
+  profiles: [User!]!
 }
 
 extend type Query {
