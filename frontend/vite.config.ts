@@ -11,6 +11,8 @@ export default defineConfig(() => ({
         schema:
           process.env.DOCKER_BUILD === "true"
             ? "schema/*.graphqls"
+            : process.env.CI === "true"
+            ? "../server/graph/*.graphqls"
             : "http://localhost:5001/graphql",
         documents: ["src/**/*.{ts,tsx}"],
         generates: {

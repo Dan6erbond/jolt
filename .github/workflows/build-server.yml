@@ -1,0 +1,25 @@
+name: Lint and build Go backend
+
+on:
+  - push
+  - pull_request
+
+defaults:
+  run:
+    working-directory: server
+
+jobs:
+  lint-and-build-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.18"
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50
+      - run: go mod download
+      - run: go generate ./...
+      - run: go build

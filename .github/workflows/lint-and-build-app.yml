@@ -1,0 +1,21 @@
+name: Lint and build React app
+
+on:
+  - push
+  - pull_request
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  lint-and-build-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: yarn
+      - run: yarn lint
+      - run: yarn build
