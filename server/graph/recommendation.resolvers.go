@@ -33,7 +33,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 		return &recommendation, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 		if err != nil {
 			return nil, err
 		}

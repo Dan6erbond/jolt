@@ -14,14 +14,14 @@ type TvService struct {
 	tmdbClient *tmdb.Client
 }
 
-func (svc *TvService) GetTmdbDiscoverTv() ([]*models.Tv, error) {
+func (svc *TvService) GetTmdbDiscoverTv(syncWithTmdb bool) ([]*models.Tv, error) {
 	tv, err := svc.tmdbClient.DiscoverTV()
 
 	if err != nil {
 		return nil, err
 	}
 
-	tvs, err := svc.SaveTmdbDiscoverTv(tv)
+	tvs, err := svc.SaveTmdbDiscoverTv(tv, syncWithTmdb)
 
 	if err != nil {
 		return nil, err
@@ -30,19 +30,26 @@ func (svc *TvService) GetTmdbDiscoverTv() ([]*models.Tv, error) {
 	return tvs, nil
 }
 
-func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV) ([]*models.Tv, error) {
+func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV, syncWithTmdb bool) ([]*models.Tv, error) {
 	tvs := make([]*models.Tv, len(tv.Results))
 
-	for i, m := range tv.Results {
-		dbTv, err := svc.GetOrCreateTvByTmdbID(m.ID)
+	for i, tv := range tv.Results {
+		dbTv, err := svc.GetOrCreateTvByTmdbID(tv.ID, syncWithTmdb)
 		if err != nil {
 			return nil, err
 		}
+
+		dbTv.Name = tv.Name
+		dbTv.PosterPath = tv.PosterPath
+		dbTv.BackdropPath = tv.BackdropPath
 
 		tvs[i] = dbTv
 	}
 
 	err := svc.db.Save(tvs).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return tvs, err
 }
@@ -81,7 +88,7 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 	return tv, nil
 }
 
-func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int) (*models.Tv, error) {
+func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb bool) (*models.Tv, error) {
 	var tv models.Tv
 	err := svc.db.FirstOrCreate(&tv, "tmdb_id = ?", tmdbID).Error
 
@@ -91,9 +98,12 @@ func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int) (*models.Tv, error) {
 
 	tv.TmdbID = uint(tmdbID)
 
-	syncedTv, err := svc.SyncTv(&tv)
-	if err != nil {
-		return nil, err
+	syncedTv := &tv
+	if syncWithTmdb {
+		syncedTv, err = svc.SyncTv(&tv)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = svc.db.Save(syncedTv).Error

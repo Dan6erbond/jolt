@@ -32,7 +32,7 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 	for _, media := range search.Results {
 		switch media.MediaType {
 		case tmdb.MediaTypeMovie:
-			movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID)
+			movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID, true)
 
 			if err != nil {
 				return nil, err
@@ -40,7 +40,7 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 
 			results = append(results, movie)
 		case tmdb.MediaTypeTv:
-			tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID)
+			tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID, true)
 
 			if err != nil {
 				return nil, err

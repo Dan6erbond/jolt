@@ -27,7 +27,7 @@ func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating flo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*mo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 	if err != nil {
 		return nil, err
 	}

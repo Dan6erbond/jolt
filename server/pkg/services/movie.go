@@ -15,14 +15,14 @@ type MovieService struct {
 	tmdbClient *tmdb.Client
 }
 
-func (svc *MovieService) GetTmdbDiscoverMovies() ([]*models.Movie, error) {
+func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb bool) ([]*models.Movie, error) {
 	movie, err := svc.tmdbClient.DiscoverMovie()
 
 	if err != nil {
 		return nil, err
 	}
 
-	movies, err := svc.SaveTmdbDiscoverMovies(movie)
+	movies, err := svc.SaveTmdbDiscoverMovies(movie, syncWithTmdb)
 
 	if err != nil {
 		return nil, err
@@ -31,19 +31,26 @@ func (svc *MovieService) GetTmdbDiscoverMovies() ([]*models.Movie, error) {
 	return movies, nil
 }
 
-func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie) ([]*models.Movie, error) {
+func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncWithTmdb bool) ([]*models.Movie, error) {
 	movies := make([]*models.Movie, len(movie.Results))
 
 	for i, m := range movie.Results {
-		dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID)
+		dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb)
 		if err != nil {
 			return nil, err
 		}
+
+		dbMovie.Title = m.Title
+		dbMovie.BackdropPath = m.BackdropPath
+		dbMovie.PosterPath = m.PosterPath
 
 		movies[i] = dbMovie
 	}
 
 	err := svc.db.Save(movies).Error
+	if err != nil {
+		return nil, err
+	}
 
 	return movies, err
 }
@@ -129,7 +136,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	return movie, nil
 }
 
-func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int) (*models.Movie, error) {
+func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb bool) (*models.Movie, error) {
 	var movie models.Movie
 	err := svc.db.FirstOrCreate(&movie, "tmdb_id = ?", tmdbID).Error
 
@@ -139,9 +146,12 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int) (*models.Movie, er
 
 	movie.TmdbID = uint(tmdbID)
 
-	syncedMovie, err := svc.SyncMovie(&movie)
-	if err != nil {
-		return nil, err
+	syncedMovie := &movie
+	if syncWithTmdb {
+		syncedMovie, err = svc.SyncMovie(&movie)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = svc.db.Save(syncedMovie).Error

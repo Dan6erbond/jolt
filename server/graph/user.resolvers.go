@@ -29,7 +29,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
 
 		movieCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watchlist").Count()
 
@@ -48,7 +48,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 
 		tvCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watchlist").Count()
 
@@ -87,7 +87,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
 
 		var watchlists []models.Watchlist
 
@@ -105,7 +105,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
 
 		var watchlists []models.Watchlist
 
@@ -124,6 +124,52 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 		return tv, nil
 	default:
 		panic("unreachable switch clause")
+	}
+}
+
+// ToggleWatched is the resolver for the toggleWatched field.
+func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.ToggleWatchedInput) (model.Media, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	//nolint:revive
+	tmdbId, err := strconv.ParseInt(input.TmdbID, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	switch input.MediaType {
+	case model.MediaTypeMovie:
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var watched []*models.Watched
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", movie.ID).Association("Watched").Find(&watched)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(watched) == 0 {
+			err = r.db.Model(&user).Association("Watched").Append(&models.Watched{MediaType: "movies", MediaID: movie.ID, UserID: user.ID})
+
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			r.db.Delete(watched[0])
+		}
+
+		return movie, nil
+	default:
+		panic("unreachable default clause")
 	}
 }
 
