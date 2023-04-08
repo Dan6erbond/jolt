@@ -243,7 +243,19 @@ func (r *tvResolver) Genres(ctx context.Context, obj *models.Tv) ([]string, erro
 
 // Watched is the resolver for the watched field.
 func (r *tvResolver) Watched(ctx context.Context, obj *models.Tv) (bool, error) {
-	panic(fmt.Errorf("not implemented: Watched - watched"))
+	user, err := r.authService.GetUser(ctx)
+
+	watchedCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Count()
+
+	if err != nil {
+		return false, err
+	}
+
+	if watchedCount == 0 {
+		return false, nil
+	} else {
+		return true, nil
+	}
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.

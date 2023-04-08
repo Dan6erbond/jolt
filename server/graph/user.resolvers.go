@@ -168,6 +168,32 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 		}
 
 		return movie, nil
+	case model.MediaTypeTv:
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var watched []*models.Watched
+
+		err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", tv.ID).Association("Watched").Find(&watched)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(watched) == 0 {
+			err = r.db.Model(&user).Association("Watched").Append(&models.Watched{MediaType: "tvs", MediaID: tv.ID, UserID: user.ID})
+
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			r.db.Delete(watched[0])
+		}
+
+		return tv, nil
 	default:
 		panic("unreachable default clause")
 	}
