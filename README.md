@@ -20,6 +20,45 @@ Jolt brings the users of your media server together in one place. With profiles 
 - **[WIP]** Sync Jellyfin media library and watched status
 - **[WIP]** Create clips from media on your media server (Jellyfin) with optional burnt-in subtitles for sharing
 
+### Screenshots
+
+<table>
+  <tbody>
+    <tr>
+      <td>
+        <img src="./assets/screenshots/feed.png">
+      </td>
+      <td>
+        <img src="./assets/screenshots/discover.png">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="./assets/screenshots/search.png">
+      </td>
+      <td>
+        <img src="./assets/screenshots/recommendations.png">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="./assets/screenshots/movie.png">
+      </td>
+      <td>
+        <img src="./assets/screenshots/tv.png">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="./assets/screenshots/watchlist.png">
+      </td>
+      <td>
+        <img src="./assets/screenshots/mashup.png">
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ## Architecture
 
 Jolt uses the modern approach, by separating frontend and backend. The frontend is implemented in React, using Mantine for UI, and Apollo Client for state management and GraphQL requests. This powerful combination enables a slick frontend app that looks great on desktop and mobile devices.
