@@ -1,11 +1,13 @@
 import { useQuery } from "@apollo/client";
 import {
+  Anchor,
   Avatar,
   Box,
   Button,
   Divider,
   Group,
   Image,
+  Loader,
   Paper,
   Space,
   Stack,
@@ -13,6 +15,7 @@ import {
   Title,
   useMantineTheme,
 } from "@mantine/core";
+import { Link } from "react-router-dom";
 import RecommendationCard from "../components/recommendationCard";
 import ReviewCard from "../components/reviewCard";
 import { graphql } from "../gql";
@@ -139,23 +142,33 @@ export const Home = () => {
       <Title color="white">Your Feed</Title>
       <Space h="lg" />
       <Stack>
-        {data?.userFeed.map((item) => (
+        {data?.userFeed.map((item, idx) => (
           <Box key={item.id}>
             <Stack spacing="xs">
               <Group spacing="xs">
-                <Avatar radius="xl" />
-                <Text color="white">
-                  <Text component="span" color={theme.colors.gray[4]}>
-                    {item.recommendedBy.name}
-                  </Text>{" "}
-                  recommended you
-                </Text>
+                <Anchor component={Link} to={"/users/" + item.recommendedBy.id}>
+                  <Group spacing="xs">
+                    <Avatar radius="xl" />
+                    <Text color={theme.colors.gray[4]}>
+                      {item.recommendedBy.name}
+                    </Text>
+                  </Group>
+                </Anchor>
+                <Text color="white">recommended you</Text>
               </Group>
               <RecommendationCard recommendation={item} />
+              {idx !== data?.userFeed.length - 1 && (
+                <Divider color={theme.colors.gray[7]} />
+              )}
             </Stack>
-            <Divider color={theme.colors.gray[7]} />
           </Box>
         ))}
+        <Loader
+          variant="dots"
+          color="white"
+          sx={{ alignSelf: "center" }}
+          mt="lg"
+        />
       </Stack>
     </Box>
   );
