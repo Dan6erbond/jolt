@@ -241,13 +241,14 @@ const Tv = () => {
             backdropFilter: "blur(10px)",
           },
         })}
-        overlayColor={
-          theme.colorScheme === "dark"
-            ? theme.colors.dark[9]
-            : theme.colors.gray[2]
-        }
-        overlayOpacity={0.65}
-        overlayBlur={3}
+        overlayProps={{
+          color:
+            theme.colorScheme === "dark"
+              ? theme.colors.dark[9]
+              : theme.colors.gray[2],
+          opacity: 0.65,
+          blur: 3,
+        }}
         size="lg"
       >
         <Stack>
