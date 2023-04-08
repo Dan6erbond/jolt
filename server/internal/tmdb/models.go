@@ -249,3 +249,26 @@ type Tv struct {
 	VoteAverage float64 `json:"vote_average"`
 	VoteCount   int     `json:"vote_count"`
 }
+
+type MovieRecommendations struct {
+	Page    int `json:"page"`
+	Results []struct {
+		Adult            bool        `json:"adult"`
+		BackdropPath     interface{} `json:"backdrop_path"`
+		ID               int         `json:"id"`
+		Title            string      `json:"title"`
+		OriginalLanguage string      `json:"original_language"`
+		OriginalTitle    string      `json:"original_title"`
+		Overview         string      `json:"overview"`
+		PosterPath       string      `json:"poster_path"`
+		MediaType        string      `json:"media_type"`
+		GenreIds         []int       `json:"genre_ids"`
+		Popularity       float64     `json:"popularity"`
+		ReleaseDate      string      `json:"release_date"`
+		Video            bool        `json:"video"`
+		VoteAverage      float64     `json:"vote_average"`
+		VoteCount        int         `json:"vote_count"`
+	} `json:"results"`
+	TotalPages   int `json:"total_pages"`
+	TotalResults int `json:"total_results"`
+}

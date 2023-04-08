@@ -151,6 +151,22 @@ func (tmdbClient *Client) Tv(id string) (*Tv, error) {
 	return &result, nil
 }
 
+func (tmdbClient *Client) MovieRecommendations(id string) (*MovieRecommendations, error) {
+	u, _, err := tmdbClient.GetURL("/movie/" + id + "/recommendations")
+	if err != nil {
+		return nil, err
+	}
+
+	var result MovieRecommendations
+
+	err = tmdbClient.DoRequest(u, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func NewTMDBService() *Client {
 	apikey := viper.GetString("tmdb.apikey")
 	return &Client{tmdbAPIKey: apikey}

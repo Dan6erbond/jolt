@@ -1,0 +1,3 @@
+extend type Query {
+  movieSuggestions: [Movie!]! @loggedIn
+}
