@@ -70,10 +70,27 @@ const RecommendationCard = ({ recommendation }: RecommendationCardProps) => {
           spacing="xs"
         >
           <Title size="h4" color="white">
-            Avatar: The Way of Water <Text component="span">(2022)</Text>
+            {recommendation.media.__typename === "Movie"
+              ? recommendation.media.title
+              : recommendation.media.__typename === "Tv"
+              ? recommendation.media.name
+              : ""}{" "}
+            <Text component="span">
+              (
+              {recommendation.media.__typename === "Movie"
+                ? recommendation.media.releaseDate.substring(0, 4)
+                : recommendation.media.__typename === "Tv"
+                ? recommendation.media.firstAirDate.substring(0, 4)
+                : ""}
+              )
+            </Text>
           </Title>
           <Text color={theme.colors.gray[4]}>
-            Science Fiction, Adventure, Action
+            {recommendation.media.__typename === "Movie"
+              ? recommendation.media.genres.join(", ")
+              : recommendation.media.__typename === "Tv"
+              ? recommendation.media.genres.join(", ")
+              : ""}
           </Text>
           <Group>
             <Group spacing="xs">
@@ -107,9 +124,7 @@ const RecommendationCard = ({ recommendation }: RecommendationCardProps) => {
           </Group>
           <Box h="auto" />
           <Group align="end" sx={{ alignSelf: "end" }}>
-            <ActionIcon variant="subtle" radius="xl" color="blue">
-              <IconCircleChevronRight />
-            </ActionIcon>
+            <IconCircleChevronRight color={theme.colors.blue[2]} />
           </Group>
         </Stack>
       </Group>
