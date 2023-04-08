@@ -54,6 +54,9 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 			if err := db.AutoMigrate(&models.Watchlist{}); err != nil {
 				logger.Error(err.Error())
 			}
+			if err := db.AutoMigrate(&models.Watched{}); err != nil {
+				logger.Error(err.Error())
+			}
 			if err := db.AutoMigrate(&models.Recommendation{}); err != nil {
 				logger.Error(err.Error())
 			}

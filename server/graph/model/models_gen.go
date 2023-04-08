@@ -57,6 +57,11 @@ type TMDBSearchResult struct {
 	TotalResults int     `json:"totalResults"`
 }
 
+type ToggleWatchedInput struct {
+	TmdbID    string    `json:"tmdbId"`
+	MediaType MediaType `json:"mediaType"`
+}
+
 type MediaType string
 
 const (

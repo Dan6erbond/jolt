@@ -16,7 +16,13 @@ input AddToWatchlistInput {
   mediaType: MediaType!
 }
 
+input ToggleWatchedInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+}
+
 extend type Mutation {
   addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
+  toggleWatched(input: ToggleWatchedInput!): Media! @loggedIn
 }

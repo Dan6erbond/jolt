@@ -94,7 +94,21 @@ func (r *movieResolver) Genres(ctx context.Context, obj *models.Movie) ([]string
 
 // Watched is the resolver for the watched field.
 func (r *movieResolver) Watched(ctx context.Context, obj *models.Movie) (bool, error) {
-	panic(fmt.Errorf("not implemented: Watched - watched"))
+	user, err := r.authService.GetUser(ctx)
+
+	var watched []*models.Watched
+
+	err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", obj.ID).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return false, err
+	}
+
+	if len(watched) == 0 {
+		return false, nil
+	} else {
+		return true, nil
+	}
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.

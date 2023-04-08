@@ -81,17 +81,19 @@ type ComplexityRoot struct {
 		ReviewMovie          func(childComplexity int, tmdbID string, review string) int
 		ReviewTv             func(childComplexity int, tmdbID string, review string) int
 		SignInWithJellyfin   func(childComplexity int, input model.SignInWithJellyfinInput) int
+		ToggleWatched        func(childComplexity int, input model.ToggleWatchedInput) int
 	}
 
 	Query struct {
-		DiscoverMovies func(childComplexity int) int
-		DiscoverTvs    func(childComplexity int) int
-		Me             func(childComplexity int) int
-		Movie          func(childComplexity int, id *string, tmdbID *string) int
-		Search         func(childComplexity int, query string, page *int) int
-		Tv             func(childComplexity int, id *string, tmdbID *string) int
-		UserFeed       func(childComplexity int) int
-		Users          func(childComplexity int) int
+		DiscoverMovies   func(childComplexity int) int
+		DiscoverTvs      func(childComplexity int) int
+		Me               func(childComplexity int) int
+		Movie            func(childComplexity int, id *string, tmdbID *string) int
+		MovieSuggestions func(childComplexity int) int
+		Search           func(childComplexity int, query string, page *int) int
+		Tv               func(childComplexity int, id *string, tmdbID *string) int
+		UserFeed         func(childComplexity int) int
+		Users            func(childComplexity int) int
 	}
 
 	Recommendation struct {
@@ -181,6 +183,7 @@ type MutationResolver interface {
 	ReviewTv(ctx context.Context, tmdbID string, review string) (*models.Review, error)
 	AddToWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error)
 	RemoveFromWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error)
+	ToggleWatched(ctx context.Context, input model.ToggleWatchedInput) (model.Media, error)
 }
 type QueryResolver interface {
 	DiscoverMovies(ctx context.Context) ([]*models.Movie, error)
@@ -188,6 +191,7 @@ type QueryResolver interface {
 	UserFeed(ctx context.Context) ([]model.FeedItem, error)
 	Movie(ctx context.Context, id *string, tmdbID *string) (*models.Movie, error)
 	Search(ctx context.Context, query string, page *int) (*model.SearchResult, error)
+	MovieSuggestions(ctx context.Context) ([]*models.Movie, error)
 	Tv(ctx context.Context, id *string, tmdbID *string) (*models.Tv, error)
 	Me(ctx context.Context) (*models.User, error)
 	Users(ctx context.Context) ([]*models.User, error)
@@ -450,6 +454,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SignInWithJellyfin(childComplexity, args["input"].(model.SignInWithJellyfinInput)), true
 
+	case "Mutation.toggleWatched":
+		if e.complexity.Mutation.ToggleWatched == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_toggleWatched_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ToggleWatched(childComplexity, args["input"].(model.ToggleWatchedInput)), true
+
 	case "Query.discoverMovies":
 		if e.complexity.Query.DiscoverMovies == nil {
 			break
@@ -482,6 +498,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Movie(childComplexity, args["id"].(*string), args["tmdbId"].(*string)), true
+
+	case "Query.movieSuggestions":
+		if e.complexity.Query.MovieSuggestions == nil {
+			break
+		}
+
+		return e.complexity.Query.MovieSuggestions(childComplexity), true
 
 	case "Query.search":
 		if e.complexity.Query.Search == nil {
@@ -819,6 +842,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputAddToWatchlistInput,
 		ec.unmarshalInputCreateRecommendationInput,
 		ec.unmarshalInputSignInWithJellyfinInput,
+		ec.unmarshalInputToggleWatchedInput,
 	)
 	first := true
 
@@ -1004,6 +1028,10 @@ extend type Query {
   search(query: String!, page: Int): SearchResult!
 }
 `, BuiltIn: false},
+	{Name: "../suggestions.graphqls", Input: `extend type Query {
+  movieSuggestions: [Movie!]! @loggedIn
+}
+`, BuiltIn: false},
 	{Name: "../tv.graphqls", Input: `type Tv {
   id: ID!
   tmdbId: ID!
@@ -1048,9 +1076,15 @@ input AddToWatchlistInput {
   mediaType: MediaType!
 }
 
+input ToggleWatchedInput {
+  tmdbId: ID!
+  mediaType: MediaType!
+}
+
 extend type Mutation {
   addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
+  toggleWatched(input: ToggleWatchedInput!): Media! @loggedIn
 }
 `, BuiltIn: false},
 }
@@ -1238,6 +1272,21 @@ func (ec *executionContext) field_Mutation_signInWithJellyfin_args(ctx context.C
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNSignInWithJellyfinInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSignInWithJellyfinInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_toggleWatched_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ToggleWatchedInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNToggleWatchedInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐToggleWatchedInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2796,6 +2845,78 @@ func (ec *executionContext) fieldContext_Mutation_removeFromWatchlist(ctx contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_toggleWatched(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_toggleWatched(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ToggleWatched(rctx, fc.Args["input"].(model.ToggleWatchedInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(model.Media); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be github.com/dan6erbond/jolt-server/graph/model.Media`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_toggleWatched(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Media does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_toggleWatched_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_discoverMovies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_discoverMovies(ctx, field)
 	if err != nil {
@@ -3116,6 +3237,99 @@ func (ec *executionContext) fieldContext_Query_search(ctx context.Context, field
 	if fc.Args, err = ec.field_Query_search_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_movieSuggestions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_movieSuggestions(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().MovieSuggestions(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*models.Movie); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*github.com/dan6erbond/jolt-server/pkg/models.Movie`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Movie)
+	fc.Result = res
+	return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐMovieᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_movieSuggestions(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Movie_id(ctx, field)
+			case "tmdbId":
+				return ec.fieldContext_Movie_tmdbId(ctx, field)
+			case "rating":
+				return ec.fieldContext_Movie_rating(ctx, field)
+			case "reviews":
+				return ec.fieldContext_Movie_reviews(ctx, field)
+			case "userReview":
+				return ec.fieldContext_Movie_userReview(ctx, field)
+			case "availableOnJellyfin":
+				return ec.fieldContext_Movie_availableOnJellyfin(ctx, field)
+			case "title":
+				return ec.fieldContext_Movie_title(ctx, field)
+			case "tagline":
+				return ec.fieldContext_Movie_tagline(ctx, field)
+			case "posterPath":
+				return ec.fieldContext_Movie_posterPath(ctx, field)
+			case "backdropPath":
+				return ec.fieldContext_Movie_backdropPath(ctx, field)
+			case "certification":
+				return ec.fieldContext_Movie_certification(ctx, field)
+			case "genres":
+				return ec.fieldContext_Movie_genres(ctx, field)
+			case "releaseDate":
+				return ec.fieldContext_Movie_releaseDate(ctx, field)
+			case "watched":
+				return ec.fieldContext_Movie_watched(ctx, field)
+			case "addedToWatchlist":
+				return ec.fieldContext_Movie_addedToWatchlist(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -7132,6 +7346,42 @@ func (ec *executionContext) unmarshalInputSignInWithJellyfinInput(ctx context.Co
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputToggleWatchedInput(ctx context.Context, obj interface{}) (model.ToggleWatchedInput, error) {
+	var it model.ToggleWatchedInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tmdbId", "mediaType"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tmdbId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tmdbId"))
+			it.TmdbID, err = ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "mediaType":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaType"))
+			it.MediaType, err = ec.unmarshalNMediaType2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐMediaType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -7490,6 +7740,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "toggleWatched":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_toggleWatched(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7619,6 +7878,29 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_search(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "movieSuggestions":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_movieSuggestions(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -9202,6 +9484,11 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNToggleWatchedInput2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐToggleWatchedInput(ctx context.Context, v interface{}) (model.ToggleWatchedInput, error) {
+	res, err := ec.unmarshalInputToggleWatchedInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNTv2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTvᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Tv) graphql.Marshaler {
