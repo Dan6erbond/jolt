@@ -9,14 +9,11 @@ import {
   Stack,
   Title,
   UnstyledButton,
-  useMantineTheme,
 } from "@mantine/core";
 import { useState } from "react";
 import { BiCameraMovie, BiPlayCircle, BiTv } from "react-icons/bi";
 
 const MashUp = () => {
-  const theme = useMantineTheme();
-
   const [mashUpType, setMashUpType] = useState<"movie" | "show">("movie");
 
   return (
