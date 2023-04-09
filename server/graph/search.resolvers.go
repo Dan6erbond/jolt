@@ -7,13 +7,22 @@ import (
 	"context"
 	"strings"
 
+	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/graph/model"
 	"github.com/dan6erbond/jolt-server/internal/tmdb"
+	"github.com/dan6erbond/jolt-server/pkg/data"
 	"github.com/dan6erbond/jolt-server/pkg/models"
 )
 
 // Search is the resolver for the search field.
-func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*model.SearchResult, error) {
+func (r *queryResolver) Search(ctx context.Context, query string) (*data.SearchResult, error) {
+	return &data.SearchResult{
+		Query: query,
+	}, nil
+}
+
+// Tmdb is the resolver for the tmdb field.
+func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult, page *int) (*model.TMDBSearchResult, error) {
 	var results []model.Media
 
 	var _page int
@@ -23,7 +32,7 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 		_page = *page
 	}
 
-	search, err := r.tmdbService.SearchMulti(query, _page)
+	search, err := r.tmdbService.SearchMulti(obj.Query, _page)
 
 	if err != nil {
 		return nil, err
@@ -50,17 +59,24 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 		}
 	}
 
-	var users []*models.User
-
-	r.db.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(query)+"%").Find(&users)
-
-	return &model.SearchResult{
-		Tmdb: &model.TMDBSearchResult{
-			Results:      results,
-			Page:         search.Page,
-			TotalPages:   search.TotalPages,
-			TotalResults: search.TotalResults,
-		},
-		Profiles: users,
+	return &model.TMDBSearchResult{
+		Results:      results,
+		Page:         search.Page,
+		TotalPages:   search.TotalPages,
+		TotalResults: search.TotalResults,
 	}, nil
 }
+
+// Profiles is the resolver for the profiles field.
+func (r *searchResultResolver) Profiles(ctx context.Context, obj *data.SearchResult) ([]*models.User, error) {
+	var users []*models.User
+
+	r.db.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(obj.Query)+"%").Find(&users)
+
+	return users, nil
+}
+
+// SearchResult returns generated.SearchResultResolver implementation.
+func (r *Resolver) SearchResult() generated.SearchResultResolver { return &searchResultResolver{r} }
+
+type searchResultResolver struct{ *Resolver }

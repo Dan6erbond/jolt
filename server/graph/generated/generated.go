@@ -15,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/dan6erbond/jolt-server/graph/model"
+	"github.com/dan6erbond/jolt-server/pkg/data"
 	"github.com/dan6erbond/jolt-server/pkg/models"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -43,6 +44,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	Recommendation() RecommendationResolver
 	Review() ReviewResolver
+	SearchResult() SearchResultResolver
 	Tv() TvResolver
 	User() UserResolver
 }
@@ -90,7 +92,7 @@ type ComplexityRoot struct {
 		Me               func(childComplexity int) int
 		Movie            func(childComplexity int, id *string, tmdbID *string) int
 		MovieSuggestions func(childComplexity int) int
-		Search           func(childComplexity int, query string, page *int) int
+		Search           func(childComplexity int, query string) int
 		Tv               func(childComplexity int, id *string, tmdbID *string) int
 		UserFeed         func(childComplexity int) int
 		Users            func(childComplexity int) int
@@ -121,7 +123,7 @@ type ComplexityRoot struct {
 
 	SearchResult struct {
 		Profiles func(childComplexity int) int
-		Tmdb     func(childComplexity int) int
+		Tmdb     func(childComplexity int, page *int) int
 	}
 
 	SignInResult struct {
@@ -190,7 +192,7 @@ type QueryResolver interface {
 	DiscoverTvs(ctx context.Context) ([]*models.Tv, error)
 	UserFeed(ctx context.Context) ([]model.FeedItem, error)
 	Movie(ctx context.Context, id *string, tmdbID *string) (*models.Movie, error)
-	Search(ctx context.Context, query string, page *int) (*model.SearchResult, error)
+	Search(ctx context.Context, query string) (*data.SearchResult, error)
 	MovieSuggestions(ctx context.Context) ([]*models.Movie, error)
 	Tv(ctx context.Context, id *string, tmdbID *string) (*models.Tv, error)
 	Me(ctx context.Context) (*models.User, error)
@@ -208,6 +210,10 @@ type ReviewResolver interface {
 	Upbolts(ctx context.Context, obj *models.Review) (int, error)
 	UpboltedByCurrentUser(ctx context.Context, obj *models.Review) (bool, error)
 	CreatedBy(ctx context.Context, obj *models.Review) (*models.User, error)
+}
+type SearchResultResolver interface {
+	Tmdb(ctx context.Context, obj *data.SearchResult, page *int) (*model.TMDBSearchResult, error)
+	Profiles(ctx context.Context, obj *data.SearchResult) ([]*models.User, error)
 }
 type TvResolver interface {
 	Rating(ctx context.Context, obj *models.Tv) (float64, error)
@@ -516,7 +522,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Search(childComplexity, args["query"].(string), args["page"].(*int)), true
+		return e.complexity.Query.Search(childComplexity, args["query"].(string)), true
 
 	case "Query.tv":
 		if e.complexity.Query.Tv == nil {
@@ -654,7 +660,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.SearchResult.Tmdb(childComplexity), true
+		args, err := ec.field_SearchResult_tmdb_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.SearchResult.Tmdb(childComplexity, args["page"].(*int)), true
 
 	case "SignInResult.accessToken":
 		if e.complexity.SignInResult.AccessToken == nil {
@@ -1020,12 +1031,12 @@ union Media = Movie | Tv
 }
 
 type SearchResult {
-  tmdb: TMDBSearchResult!
+  tmdb(page: Int): TMDBSearchResult!
   profiles: [User!]!
 }
 
 extend type Query {
-  search(query: String!, page: Int): SearchResult!
+  search(query: String!): SearchResult!
 }
 `, BuiltIn: false},
 	{Name: "../suggestions.graphqls", Input: `extend type Query {
@@ -1346,15 +1357,6 @@ func (ec *executionContext) field_Query_search_args(ctx context.Context, rawArgs
 		}
 	}
 	args["query"] = arg0
-	var arg1 *int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg1, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["page"] = arg1
 	return args, nil
 }
 
@@ -1379,6 +1381,21 @@ func (ec *executionContext) field_Query_tv_args(ctx context.Context, rawArgs map
 		}
 	}
 	args["tmdbId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_SearchResult_tmdb_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
 	return args, nil
 }
 
@@ -3197,7 +3214,7 @@ func (ec *executionContext) _Query_search(ctx context.Context, field graphql.Col
 	}()
 	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Search(rctx, fc.Args["query"].(string), fc.Args["page"].(*int))
+		return ec.resolvers.Query().Search(rctx, fc.Args["query"].(string))
 	})
 
 	if resTmp == nil {
@@ -3206,9 +3223,9 @@ func (ec *executionContext) _Query_search(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SearchResult)
+	res := resTmp.(*data.SearchResult)
 	fc.Result = res
-	return ec.marshalNSearchResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSearchResult(ctx, field.Selections, res)
+	return ec.marshalNSearchResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋdataᚐSearchResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_search(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4312,7 +4329,7 @@ func (ec *executionContext) fieldContext_Review_createdBy(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_tmdb(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_tmdb(ctx context.Context, field graphql.CollectedField, obj *data.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_tmdb(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -4326,7 +4343,7 @@ func (ec *executionContext) _SearchResult_tmdb(ctx context.Context, field graphq
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Tmdb, nil
+		return ec.resolvers.SearchResult().Tmdb(rctx, obj, fc.Args["page"].(*int))
 	})
 
 	if resTmp == nil {
@@ -4344,8 +4361,8 @@ func (ec *executionContext) fieldContext_SearchResult_tmdb(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "SearchResult",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "page":
@@ -4360,10 +4377,21 @@ func (ec *executionContext) fieldContext_SearchResult_tmdb(ctx context.Context, 
 			return nil, fmt.Errorf("no field named %q was found under type TMDBSearchResult", field.Name)
 		},
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_SearchResult_tmdb_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
 	return fc, nil
 }
 
-func (ec *executionContext) _SearchResult_profiles(ctx context.Context, field graphql.CollectedField, obj *model.SearchResult) (ret graphql.Marshaler) {
+func (ec *executionContext) _SearchResult_profiles(ctx context.Context, field graphql.CollectedField, obj *data.SearchResult) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_SearchResult_profiles(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -4377,7 +4405,7 @@ func (ec *executionContext) _SearchResult_profiles(ctx context.Context, field gr
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Profiles, nil
+		return ec.resolvers.SearchResult().Profiles(rctx, obj)
 	})
 
 	if resTmp == nil {
@@ -4395,8 +4423,8 @@ func (ec *executionContext) fieldContext_SearchResult_profiles(ctx context.Conte
 	fc = &graphql.FieldContext{
 		Object:     "SearchResult",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -8257,7 +8285,7 @@ func (ec *executionContext) _Review(ctx context.Context, sel ast.SelectionSet, o
 
 var searchResultImplementors = []string{"SearchResult"}
 
-func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj *model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.SelectionSet, obj *data.SearchResult) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, searchResultImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -8266,19 +8294,45 @@ func (ec *executionContext) _SearchResult(ctx context.Context, sel ast.Selection
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("SearchResult")
 		case "tmdb":
+			field := field
 
-			out.Values[i] = ec._SearchResult_tmdb(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SearchResult_tmdb(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "profiles":
+			field := field
 
-			out.Values[i] = ec._SearchResult_profiles(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SearchResult_profiles(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9381,11 +9435,11 @@ func (ec *executionContext) marshalNReview2ᚖgithubᚗcomᚋdan6erbondᚋjolt�
 	return ec._Review(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSearchResult2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) marshalNSearchResult2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋdataᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v data.SearchResult) graphql.Marshaler {
 	return ec._SearchResult(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSearchResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v *model.SearchResult) graphql.Marshaler {
+func (ec *executionContext) marshalNSearchResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋdataᚐSearchResult(ctx context.Context, sel ast.SelectionSet, v *data.SearchResult) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -9459,6 +9513,10 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNTMDBSearchResult2githubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐTMDBSearchResult(ctx context.Context, sel ast.SelectionSet, v model.TMDBSearchResult) graphql.Marshaler {
+	return ec._TMDBSearchResult(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNTMDBSearchResult2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋgraphᚋmodelᚐTMDBSearchResult(ctx context.Context, sel ast.SelectionSet, v *model.TMDBSearchResult) graphql.Marshaler {

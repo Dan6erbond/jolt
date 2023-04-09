@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-
-	"github.com/dan6erbond/jolt-server/pkg/models"
 )
 
 type FeedItem interface {
@@ -33,11 +31,6 @@ type CreateRecommendationInput struct {
 type RefreshTokenResult struct {
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`
-}
-
-type SearchResult struct {
-	Tmdb     *TMDBSearchResult `json:"tmdb"`
-	Profiles []*models.User    `json:"profiles"`
 }
 
 type SignInResult struct {

@@ -6,10 +6,10 @@ type TMDBSearchResult {
 }
 
 type SearchResult {
-  tmdb: TMDBSearchResult!
+  tmdb(page: Int): TMDBSearchResult!
   profiles: [User!]!
 }
 
 extend type Query {
-  search(query: String!, page: Int): SearchResult!
+  search(query: String!): SearchResult!
 }
