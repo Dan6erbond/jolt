@@ -23,3 +23,5 @@ jobs:
         uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          git-message: "chore(release): {version} [skip changelog]"
+        if: "!contains(github.event.head_commit.message, 'skip changelog')"
