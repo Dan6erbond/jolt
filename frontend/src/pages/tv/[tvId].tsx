@@ -117,12 +117,12 @@ const Tv = () => {
   const [showRecommendationModal, setShowRecommendationModal] =
     useState<boolean>(false);
 
-  const [reviewMovie, { loading: submittingReview }] = useMutation(
+  const [reviewTv, { loading: submittingReview }] = useMutation(
     graphql(`
-      mutation ReviewMovie($tmdbId: ID!, $review: String!) {
-        reviewMovie(tmdbId: $tmdbId, review: $review) {
+      mutation ReviewTv($tmdbId: ID!, $review: String!) {
+        reviewTv(tmdbId: $tmdbId, review: $review) {
           media {
-            ... on Movie {
+            ... on Tv {
               id
               reviews {
                 review
@@ -140,7 +140,7 @@ const Tv = () => {
 
   const submitReview = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    reviewMovie({
+    reviewTv({
       variables: { tmdbId: tvId!, review: review },
     });
   };
@@ -149,11 +149,11 @@ const Tv = () => {
     e.preventDefault();
     client.mutate({
       mutation: graphql(`
-        mutation RecommendMovie($tmdbId: ID!, $userId: ID!, $message: String!) {
+        mutation RecommendTv($tmdbId: ID!, $userId: ID!, $message: String!) {
           createRecommendation(
             input: {
               tmdbId: $tmdbId
-              mediaType: MOVIE
+              mediaType: TV
               recommendationForUserId: $userId
               message: $message
             }
@@ -228,7 +228,7 @@ const Tv = () => {
       <Modal
         opened={showRecommendationModal}
         onClose={() => setShowRecommendationModal((show) => !show)}
-        title="Recommend movie"
+        title="Recommend show"
         centered
         styles={(theme) => ({
           title: { color: "white" },
@@ -424,17 +424,12 @@ const Tv = () => {
             setRating(value);
             client.mutate({
               mutation: graphql(`
-                mutation RateMovie($tmdbId: ID!, $rating: Float!) {
-                  rateMovie(tmdbId: $tmdbId, rating: $rating) {
+                mutation RateTv($tmdbId: ID!, $rating: Float!) {
+                  rateTv(tmdbId: $tmdbId, rating: $rating) {
                     media {
-                      ... on Movie {
+                      ... on Tv {
                         id
                         rating
-                        userReview {
-                          id
-                          rating
-                          review
-                        }
                       }
                     }
                   }
@@ -453,7 +448,7 @@ const Tv = () => {
           rightIcon={<IconUserPlus />}
           onClick={() => setShowRecommendationModal(true)}
         >
-          Recommend this movie
+          Recommend this show
         </Button>
       </Group>
       <Space h="xl" />
