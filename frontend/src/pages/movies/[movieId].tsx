@@ -456,11 +456,6 @@ const Movie = () => {
                       ... on Movie {
                         id
                         rating
-                        userReview {
-                          id
-                          rating
-                          review
-                        }
                       }
                     }
                   }
