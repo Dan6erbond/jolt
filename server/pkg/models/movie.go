@@ -19,6 +19,7 @@ type Movie struct {
 	Genres                   pq.StringArray `gorm:"type:text[]"`
 	ReleaseDate              time.Time
 	Certification            string
+	CertificationDoesntExist bool `gorm:"false"`
 	JellyfinID               string
 	JellyfinServerID         string
 	Recommendations          []Recommendation `gorm:"polymorphic:Media;"`
