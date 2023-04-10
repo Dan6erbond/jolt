@@ -171,7 +171,7 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -238,7 +238,7 @@ func (r *queryResolver) Movie(ctx context.Context, id *string, tmdbID *string) (
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 	if err != nil {
 		return nil, err
 	}

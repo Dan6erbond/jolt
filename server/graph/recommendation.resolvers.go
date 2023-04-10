@@ -33,7 +33,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func (r *mutationResolver) CreateRecommendation(ctx context.Context, input model
 
 		return &recommendation, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 		if err != nil {
 			return nil, err
 		}
@@ -83,24 +83,20 @@ func (r *recommendationResolver) Media(ctx context.Context, obj *models.Recommen
 	switch obj.MediaType {
 	//nolint:goconst // TODO: find better solution for table names
 	case "movies":
-		var movie models.Movie
-
-		err := r.db.First(&movie, obj.MediaID).Error
+		movie, err := r.movieService.GetOrCreateMovieByID(obj.MediaID)
 		if err != nil {
 			return nil, err
 		}
 
-		return &movie, nil
+		return movie, nil
 	//nolint:goconst // TODO: find better solution for table names
 	case "tvs":
-		var tv models.Tv
-
-		err := r.db.First(&tv, obj.MediaID).Error
+		tv, err := r.tvService.GetOrCreateTvByID(obj.MediaID)
 		if err != nil {
 			return nil, err
 		}
 
-		return &tv, nil
+		return tv, nil
 	default:
 		panic("unreachable switch clause")
 	}

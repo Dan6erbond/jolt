@@ -31,7 +31,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -54,7 +54,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -97,7 +97,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -123,7 +123,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -169,7 +169,7 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -195,7 +195,7 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -312,22 +312,17 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	return users, nil
 }
 
-// JellyfinID is the resolver for the jellyfinId field.
-func (r *userResolver) JellyfinID(ctx context.Context, obj *models.User) (string, error) {
-	return obj.JellyfinUserID, nil
-}
-
 // ProfileImageURL is the resolver for the profileImageUrl field.
 func (r *userResolver) ProfileImageURL(ctx context.Context, obj *models.User) (string, error) {
-	if obj.JellyfinUserID != "" {
-		return r.jellyfinClient.GetURL(path.Join("Users/", obj.JellyfinUserID, "/Images/Primary"))
+	if obj.JellyfinID != "" {
+		u, err := r.jellyfinClient.GetURL(path.Join("Users/", obj.JellyfinID, "/Images/Primary"))
+		return u.String(), err
 	}
 	return "", nil
 }
 
 // Watchlist is the resolver for the watchlist field.
 func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error) {
-	var medias []model.Media
 	//nolint:wsl
 	var watchlist []models.Watchlist
 
@@ -336,26 +331,59 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 		return nil, err
 	}
 
-	for _, item := range watchlist {
+	medias := make([]model.Media, len(watchlist))
+	for i, item := range watchlist {
 		switch item.MediaType {
 		case "movies":
-			var movie models.Movie
+			movie, err := r.movieService.GetOrCreateMovieByID(item.MediaID)
 
-			err = r.db.First(&movie, item.MediaID).Error
 			if err != nil {
 				return nil, err
 			}
 
-			medias = append(medias, movie)
+			medias[i] = movie
 		case "tvs":
-			var tv models.Tv
+			tv, err := r.tvService.GetOrCreateTvByID(item.MediaID)
 
-			err = r.db.First(&tv, item.MediaID).Error
 			if err != nil {
 				return nil, err
 			}
 
-			medias = append(medias, tv)
+			medias[i] = tv
+		}
+	}
+
+	return medias, nil
+}
+
+// Watched is the resolver for the watched field.
+func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.Media, error) {
+	var watched []models.Watched
+	err := r.db.Model(obj).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	medias := make([]model.Media, len(watched))
+	for i, w := range watched {
+		switch w.MediaType {
+		case "movies":
+			movie, err := r.movieService.GetOrCreateMovieByID(w.MediaID)
+
+			if err != nil {
+				return nil, err
+			}
+
+			medias[i] = movie
+		case "tvs":
+			tv, err := r.tvService.GetOrCreateTvByID(w.MediaID)
+
+			if err != nil {
+				return nil, err
+			}
+
+			medias[i] = tv
 		}
 	}
 

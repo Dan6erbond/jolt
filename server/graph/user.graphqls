@@ -4,6 +4,7 @@ type User {
   name: String!
   profileImageUrl: String!
   watchlist: [Media!]!
+  watched: [Media!]!
   recommendations: [Recommendation!]!
   recommendationsCreated: [Recommendation!]!
   userFollows: Boolean!

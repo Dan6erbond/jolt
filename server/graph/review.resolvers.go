@@ -16,9 +16,7 @@ import (
 func (r *reviewResolver) Media(ctx context.Context, obj *models.Review) (model.Media, error) {
 	switch obj.MediaType {
 	case "movies":
-		var movie models.Movie
-
-		err := r.db.First(&movie, obj.MediaID).Error
+		movie, err := r.movieService.GetOrCreateMovieByID(obj.MediaID)
 
 		if err != nil {
 			return nil, err
@@ -26,14 +24,12 @@ func (r *reviewResolver) Media(ctx context.Context, obj *models.Review) (model.M
 
 		return movie, nil
 	case "tvs":
-		var tv models.Tv
-
-		err := r.db.First(&tv, obj.MediaID).Error
+		tv, err := r.tvService.GetOrCreateTvByID(obj.MediaID)
 		if err != nil {
 			return nil, err
 		}
 
-		return &tv, nil
+		return tv, nil
 	default:
 		panic("unreachable switch clause")
 	}

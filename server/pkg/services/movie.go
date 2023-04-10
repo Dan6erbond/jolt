@@ -153,7 +153,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	return movie, nil
 }
 
-func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb bool) (*models.Movie, error) {
+func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bool) (*models.Movie, error) {
 	var movie models.Movie
 	err := svc.db.FirstOrCreate(&movie, "tmdb_id = ?", tmdbID).Error
 
@@ -164,7 +164,31 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb bool)
 	movie.TmdbID = uint(tmdbID)
 
 	syncedMovie := &movie
-	if syncWithTmdb {
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] == true {
+		syncedMovie, err = svc.SyncMovie(&movie)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = svc.db.Save(syncedMovie).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return syncedMovie, nil
+}
+
+func (svc *MovieService) GetOrCreateMovieByID(id uint, syncWithTmdb ...bool) (*models.Movie, error) {
+	var movie models.Movie
+	err := svc.db.FirstOrCreate(&movie, id).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	syncedMovie := &movie
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] == true {
 		syncedMovie, err = svc.SyncMovie(&movie)
 		if err != nil {
 			return nil, err

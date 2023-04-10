@@ -22,7 +22,7 @@ func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating flo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -63,20 +63,18 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 // Tv is the resolver for the tv field.
 func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*models.Tv, error) {
 	if id != nil {
-		var tv models.Tv
-
 		//nolint:revive
-		dbID, err := strconv.ParseInt(*tmdbID, 10, 64)
+		dbID, err := strconv.ParseInt(*id, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 
-		err = r.db.First(&tv, dbID).Error
+		tv, err := r.tvService.GetOrCreateTvByID(uint(dbID))
 		if err != nil {
 			return nil, err
 		}
 
-		return &tv, nil
+		return tv, nil
 	}
 
 	if tmdbID == nil {
@@ -89,7 +87,7 @@ func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*mo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 	if err != nil {
 		return nil, err
 	}

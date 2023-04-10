@@ -42,7 +42,7 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 		go func(media tmdb.SearchMultiResult) {
 			switch media.MediaType {
 			case tmdb.MediaTypeMovie:
-				movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID, true)
+				movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID)
 
 				if err != nil {
 					panic(err.Error())
@@ -50,7 +50,7 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 
 				mediaChan <- movie
 			case tmdb.MediaTypeTv:
-				tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID, true)
+				tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID)
 
 				if err != nil {
 					panic(err.Error())
