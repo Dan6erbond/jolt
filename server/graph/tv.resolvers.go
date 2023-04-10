@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/pkg/models"
@@ -180,17 +181,39 @@ func (r *tvResolver) Genres(ctx context.Context, obj *models.Tv) ([]string, erro
 func (r *tvResolver) Watched(ctx context.Context, obj *models.Tv) (bool, error) {
 	user, err := r.authService.GetUser(ctx)
 
-	watchedCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Count()
-
 	if err != nil {
 		return false, err
 	}
+
+	watchedCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Count()
 
 	if watchedCount == 0 {
 		return false, nil
 	}
 
 	return true, nil
+}
+
+// WatchedOn is the resolver for the watchedOn field.
+func (r *tvResolver) WatchedOn(ctx context.Context, obj *models.Tv) (*time.Time, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var watched []models.Watched
+	err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(watched) == 0 {
+		return nil, nil
+	}
+
+	return &watched[0].CreatedAt, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.

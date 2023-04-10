@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/pkg/models"
@@ -108,6 +109,28 @@ func (r *movieResolver) Watched(ctx context.Context, obj *models.Movie) (bool, e
 	}
 
 	return true, nil
+}
+
+// WatchedOn is the resolver for the watchedOn field.
+func (r *movieResolver) WatchedOn(ctx context.Context, obj *models.Movie) (*time.Time, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var watched []models.Watched
+	err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", obj.ID).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(watched) == 0 {
+		return nil, nil
+	}
+
+	return &watched[0].CreatedAt, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.

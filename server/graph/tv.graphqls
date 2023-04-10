@@ -12,6 +12,7 @@ type Tv {
   genres: [String!]!
   firstAirDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 

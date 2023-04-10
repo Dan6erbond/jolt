@@ -13,6 +13,7 @@ type Movie {
   genres: [String!]!
   releaseDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 
