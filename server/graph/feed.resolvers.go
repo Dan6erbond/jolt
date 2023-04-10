@@ -28,8 +28,8 @@ func (r *queryResolver) UserFeed(ctx context.Context) ([]model.FeedItem, error) 
 
 	feedItems := make([]model.FeedItem, len(recommendations))
 
-	for _, fi := range recommendations {
-		feedItems = append(feedItems, fi)
+	for i, fi := range recommendations {
+		feedItems[i] = fi
 	}
 
 	return feedItems, nil
