@@ -3,6 +3,7 @@ package jellyfin
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -17,28 +18,34 @@ var (
 	EmptyToken = BaseToken + ", Token=\"\""
 )
 
+var (
+	ErrUnauthorized = errors.New("access token not given or invalid")
+)
+
 type Client struct {
 	host string
 }
 
-func (jc *Client) GetURL(path string) (string, error) {
+func (jc *Client) GetURL(path string) (*url.URL, error) {
 	u, err := url.Parse(jc.host)
 	if err != nil {
-		return "", err
+		return &url.URL{}, err
 	}
 
 	u.Path = path
 
-	return u.String(), nil
+	return u, nil
+}
+
+func (jc *Client) GetUserAuthorization(token string) string {
+	return BaseToken + fmt.Sprintf(", Token=\"%s\"", token)
 }
 
 func (jc *Client) AuthenticateUserByName(username string, password string) (*AuthenticateUserByNameResult, error) {
-	u, err := url.Parse(jc.host)
+	u, err := jc.GetURL("/Users/AuthenticateByName")
 	if err != nil {
 		return nil, err
 	}
-
-	u.Path = "/Users/AuthenticateByName"
 
 	data, err := json.Marshal(AuthenticateUserByNameInput{username, password})
 	if err != nil {
@@ -74,17 +81,12 @@ func (jc *Client) AuthenticateUserByName(username string, password string) (*Aut
 	return &result, nil
 }
 
-func (jc *Client) GetUserAuthorization(token string) string {
-	return BaseToken + fmt.Sprintf(", Token=\"%s\"", token)
-}
-
-func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*AuthenticateUserByNameResult, error) {
-	u, err := url.Parse(jc.host)
+func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*UserItems, error) {
+	u, err := jc.GetURL(fmt.Sprintf("/Users/%s/Items", userID))
 	if err != nil {
 		return nil, err
 	}
 
-	u.Path = fmt.Sprintf("/Users/%s/Items", userID)
 	u.RawQuery = query.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
@@ -102,11 +104,15 @@ func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*
 		return nil, err
 	}
 
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 
-	var result AuthenticateUserByNameResult
+	var result UserItems
 
 	err = json.Unmarshal(body, &result)
 	if err != nil {
