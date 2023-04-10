@@ -23,8 +23,6 @@ func (r *queryResolver) Search(ctx context.Context, query string) (*data.SearchR
 
 // Tmdb is the resolver for the tmdb field.
 func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult, page *int) (*model.TMDBSearchResult, error) {
-	var results []model.Media
-
 	var _page int
 	if page == nil {
 		_page = 1
@@ -38,24 +36,37 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 		return nil, err
 	}
 
-	for _, media := range search.Results {
-		switch media.MediaType {
-		case tmdb.MediaTypeMovie:
-			movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID, true)
+	mediaChan := make(chan model.Media, len(search.Results))
 
-			if err != nil {
-				return nil, err
+	for i := range search.Results {
+		go func(media tmdb.SearchMultiResult) {
+			switch media.MediaType {
+			case tmdb.MediaTypeMovie:
+				movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID, true)
+
+				if err != nil {
+					panic(err.Error())
+				}
+
+				mediaChan <- movie
+			case tmdb.MediaTypeTv:
+				tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID, true)
+
+				if err != nil {
+					panic(err.Error())
+				}
+
+				mediaChan <- tv
+			default:
+				mediaChan <- nil
 			}
+		}(search.Results[i])
+	}
 
-			results = append(results, movie)
-		case tmdb.MediaTypeTv:
-			tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID, true)
-
-			if err != nil {
-				return nil, err
-			}
-
-			results = append(results, tv)
+	var results []model.Media
+	for i := 0; i < len(search.Results); i++ {
+		if media := <-mediaChan; media != nil {
+			results = append(results, media)
 		}
 	}
 
