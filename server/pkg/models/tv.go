@@ -12,6 +12,7 @@ type Tv struct {
 	TmdbID          uint
 	SyncedWithTmdb  bool `gorm:"default:false"`
 	Name            string
+	Overview        string
 	Tagline         string
 	PosterPath      string
 	BackdropPath    string

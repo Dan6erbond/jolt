@@ -44,6 +44,7 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 
 			if !syncWithTmdb {
 				dbMovie.Title = m.Title
+				dbMovie.Overview = m.Overview
 				dbMovie.BackdropPath = m.BackdropPath
 				dbMovie.PosterPath = m.PosterPath
 			}
@@ -78,6 +79,8 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 		return nil, err
 	}
 
+	movie.TmdbID = uint(tmdbMovie.ID)
+
 	for _, genre := range tmdbMovie.Genres {
 		movie.Genres = append(movie.Genres, genre.Name)
 	}
@@ -89,6 +92,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	}
 
 	movie.Tagline = tmdbMovie.Tagline
+	movie.Overview = tmdbMovie.Overview
 	movie.PosterPath = tmdbMovie.PosterPath
 	movie.BackdropPath = tmdbMovie.BackdropPath
 

@@ -40,6 +40,7 @@ func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV, syncWithTmdb bool)
 		}
 
 		dbTv.Name = tv.Name
+		dbTv.Overview = tv.Overview
 		dbTv.PosterPath = tv.PosterPath
 		dbTv.BackdropPath = tv.BackdropPath
 
@@ -65,11 +66,14 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 		return nil, err
 	}
 
+	tv.TmdbID = uint(tmdbTv.ID)
+
 	for _, genre := range tmdbTv.Genres {
 		tv.Genres = append(tv.Genres, genre.Name)
 	}
 
 	tv.Name = tmdbTv.Name
+	tv.Overview = tmdbTv.Overview
 	tv.Tagline = tmdbTv.Tagline
 	tv.PosterPath = tmdbTv.PosterPath
 	tv.BackdropPath = tmdbTv.BackdropPath

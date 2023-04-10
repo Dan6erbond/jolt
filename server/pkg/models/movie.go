@@ -13,6 +13,7 @@ type Movie struct {
 	SyncedWithTmdb           bool `gorm:"default:false"`
 	Title                    string
 	Tagline                  string
+	Overview                 string
 	PosterPath               string
 	BackdropPath             string
 	Genres                   pq.StringArray `gorm:"type:text[]"`

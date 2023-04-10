@@ -7,6 +7,7 @@ type Tv {
   availableOnJellyfin: Boolean!
   name: String!
   tagline: String!
+  overview: String!
   posterPath: String!
   backdropPath: String!
   genres: [String!]!
