@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
@@ -314,6 +315,14 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 // JellyfinID is the resolver for the jellyfinId field.
 func (r *userResolver) JellyfinID(ctx context.Context, obj *models.User) (string, error) {
 	return obj.JellyfinUserID, nil
+}
+
+// ProfileImageURL is the resolver for the profileImageUrl field.
+func (r *userResolver) ProfileImageURL(ctx context.Context, obj *models.User) (string, error) {
+	if obj.JellyfinUserID != "" {
+		return r.jellyfinClient.GetURL(path.Join("Users/", obj.JellyfinUserID, "/Images/Primary"))
+	}
+	return "", nil
 }
 
 // Watchlist is the resolver for the watchlist field.

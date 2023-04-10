@@ -2,6 +2,7 @@ type User {
   id: ID!
   jellyfinId: ID!
   name: String!
+  profileImageUrl: String!
   watchlist: [Media!]!
   recommendations: [Recommendation!]!
   recommendationsCreated: [Recommendation!]!

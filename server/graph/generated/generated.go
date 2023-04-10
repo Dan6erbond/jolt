@@ -164,6 +164,7 @@ type ComplexityRoot struct {
 		ID                     func(childComplexity int) int
 		JellyfinID             func(childComplexity int) int
 		Name                   func(childComplexity int) int
+		ProfileImageURL        func(childComplexity int) int
 		Recommendations        func(childComplexity int) int
 		RecommendationsCreated func(childComplexity int) int
 		Reviews                func(childComplexity int) int
@@ -241,6 +242,7 @@ type TvResolver interface {
 type UserResolver interface {
 	JellyfinID(ctx context.Context, obj *models.User) (string, error)
 
+	ProfileImageURL(ctx context.Context, obj *models.User) (string, error)
 	Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error)
 	Recommendations(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
 	RecommendationsCreated(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
@@ -890,6 +892,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Name(childComplexity), true
 
+	case "User.profileImageUrl":
+		if e.complexity.User.ProfileImageURL == nil {
+			break
+		}
+
+		return e.complexity.User.ProfileImageURL(childComplexity), true
+
 	case "User.recommendations":
 		if e.complexity.User.Recommendations == nil {
 			break
@@ -1158,6 +1167,7 @@ extend type Mutation {
   id: ID!
   jellyfinId: ID!
   name: String!
+  profileImageUrl: String!
   watchlist: [Media!]!
   recommendations: [Recommendation!]!
   recommendationsCreated: [Recommendation!]!
@@ -3184,6 +3194,8 @@ func (ec *executionContext) fieldContext_Mutation_toggleFollow(ctx context.Conte
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -3782,6 +3794,8 @@ func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field gra
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -3860,6 +3874,8 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -3952,6 +3968,8 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -4218,6 +4236,8 @@ func (ec *executionContext) fieldContext_Recommendation_recommendedBy(ctx contex
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -4320,6 +4340,8 @@ func (ec *executionContext) fieldContext_Recommendation_recommendationFor(ctx co
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -4729,6 +4751,8 @@ func (ec *executionContext) fieldContext_Review_createdBy(ctx context.Context, f
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -4852,6 +4876,8 @@ func (ec *executionContext) fieldContext_SearchResult_profiles(ctx context.Conte
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -5961,6 +5987,47 @@ func (ec *executionContext) fieldContext_User_name(ctx context.Context, field gr
 	return fc, nil
 }
 
+func (ec *executionContext) _User_profileImageUrl(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_profileImageUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ProfileImageURL(rctx, obj)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_profileImageUrl(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_watchlist(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_watchlist(ctx, field)
 	if err != nil {
@@ -6191,6 +6258,8 @@ func (ec *executionContext) fieldContext_User_followers(ctx context.Context, fie
 				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
+			case "profileImageUrl":
+				return ec.fieldContext_User_profileImageUrl(ctx, field)
 			case "watchlist":
 				return ec.fieldContext_User_watchlist(ctx, field)
 			case "recommendations":
@@ -9427,6 +9496,26 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "profileImageUrl":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_profileImageUrl(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "watchlist":
 			field := field
 

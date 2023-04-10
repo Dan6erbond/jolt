@@ -8,7 +8,7 @@ export const useSearch = () =>
         search(query: $query) {
           profiles {
             id
-            jellyfinId
+            profileImageUrl
             name
           }
           tmdb(page: $page) {

@@ -6,21 +6,14 @@ interface UserAvatarProps extends AvatarProps {
     __typename?: "User";
     id?: string;
     name?: string;
-    jellyfinId?: string;
+    profileImageUrl?: string;
   };
 }
 
 const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(
   ({ user, ...props }, ref) => {
     return (
-      <Avatar
-        ref={ref}
-        {...props}
-        src={
-          user.jellyfinId &&
-          `https://jellyfin.ravianand.me/Users/${user.jellyfinId}/Images/Primary`
-        }
-      >
+      <Avatar ref={ref} {...props} src={user.profileImageUrl}>
         {user.name &&
           user.name
             .split(" ")

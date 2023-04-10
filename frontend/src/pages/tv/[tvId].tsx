@@ -75,7 +75,7 @@ const Tv = () => {
             review
             createdBy {
               id
-              jellyfinId
+              profileImageUrl
               name
             }
           }
@@ -97,7 +97,7 @@ const Tv = () => {
       query Users {
         users {
           id
-          jellyfinId
+          profileImageUrl
           name
         }
       }
@@ -130,7 +130,7 @@ const Tv = () => {
                 review
                 createdBy {
                   id
-                  jellyfinId
+                  profileImageUrl
                   name
                 }
               }

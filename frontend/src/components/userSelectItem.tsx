@@ -4,7 +4,7 @@ import UserAvatar from "./userAvatar";
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
   __typename?: "User";
-  jellyfinId: string;
+  profileImageUrl: string;
   id: string;
   name: string;
   value: string;
@@ -12,10 +12,13 @@ interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
 }
 
 export const UserSelectItem = forwardRef<HTMLDivElement, ItemProps>(
-  ({ __typename, id, jellyfinId, name, label, ...others }: ItemProps, ref) => (
+  (
+    { __typename, id, profileImageUrl, name, ...others }: ItemProps,
+    ref,
+  ) => (
     <div ref={ref} {...others}>
       <Group noWrap>
-        <UserAvatar user={{ __typename, id, jellyfinId, name }} />
+        <UserAvatar user={{ __typename, id, profileImageUrl, name }} />
         <div>
           <Text size="sm" color="white">
             {name}

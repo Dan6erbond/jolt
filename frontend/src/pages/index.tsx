@@ -129,7 +129,7 @@ export const Home = () => {
             }
             recommendedBy {
               id
-              jellyfinId
+              profileImageUrl
               name
             }
             message

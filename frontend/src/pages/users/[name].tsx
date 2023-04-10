@@ -23,7 +23,7 @@ const User = () => {
       query UserByName($name: String!) {
         user(name: $name) {
           id
-          jellyfinId
+          profileImageUrl
           name
           userFollows
           followers {
@@ -49,7 +49,7 @@ const User = () => {
             }
             createdBy {
               id
-              jellyfinId
+              profileImageUrl
               name
             }
             rating

@@ -77,7 +77,7 @@ const Movie = () => {
             review
             createdBy {
               id
-              jellyfinId
+              profileImageUrl
               name
             }
           }
@@ -99,7 +99,7 @@ const Movie = () => {
       query Users {
         users {
           id
-          jellyfinId
+          profileImageUrl
           name
         }
       }
@@ -132,7 +132,7 @@ const Movie = () => {
                 review
                 createdBy {
                   id
-                  jellyfinId
+                  profileImageUrl
                   name
                 }
               }

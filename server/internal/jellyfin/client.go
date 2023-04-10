@@ -21,6 +21,17 @@ type Client struct {
 	host string
 }
 
+func (jc *Client) GetURL(path string) (string, error) {
+	u, err := url.Parse(jc.host)
+	if err != nil {
+		return "", err
+	}
+
+	u.Path = path
+
+	return u.String(), nil
+}
+
 func (jc *Client) AuthenticateUserByName(username string, password string) (*AuthenticateUserByNameResult, error) {
 	u, err := url.Parse(jc.host)
 	if err != nil {
