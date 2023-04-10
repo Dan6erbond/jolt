@@ -20,6 +20,7 @@ type Tv struct {
 	FirstAirDate    time.Time
 	Recommendations []Recommendation `gorm:"polymorphic:Media;"`
 	Watchlists      []Watchlist      `gorm:"polymorphic:Media;"`
+	Watched         []Watched        `gorm:"polymorphic:Media;"`
 	Reviews         []Review         `gorm:"polymorphic:Media;"`
 }
 

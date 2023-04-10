@@ -23,6 +23,7 @@ type Movie struct {
 	JellyfinServerID         string
 	Recommendations          []Recommendation `gorm:"polymorphic:Media;"`
 	Watchlists               []Watchlist      `gorm:"polymorphic:Media;"`
+	Watched                  []Watched        `gorm:"polymorphic:Media;"`
 	Reviews                  []Review         `gorm:"polymorphic:Media;"`
 }
 
