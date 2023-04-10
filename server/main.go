@@ -1,13 +1,17 @@
+/*
+Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+
+*/
 package main
 
 import (
 	"fmt"
 
-	"github.com/dan6erbond/jolt-server/pkg"
+	"github.com/dan6erbond/jolt-server/cmd"
 	"github.com/spf13/viper"
 )
 
-func main() {
+func init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
@@ -63,7 +67,8 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
+}
 
-	app := pkg.NewApp()
-	app.Run()
+func main() {
+	cmd.Execute()
 }
