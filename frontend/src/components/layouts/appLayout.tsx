@@ -28,6 +28,7 @@ import {
   TbSearch,
   TbUser,
   TbUserPlus,
+  TbLogout,
 } from "react-icons/tb";
 import {
   Form,
@@ -39,7 +40,7 @@ import {
 } from "react-router-dom";
 import { graphql } from "../../gql";
 import { useSearch } from "../../hooks/useSearch";
-import { loggedIn, sessionError } from "../../utils/apolloClient";
+import { accessToken, loggedIn, sessionError } from "../../utils/apolloClient";
 import Poster from "../poster";
 
 interface SearchResultItemProps extends Omit<LinkProps, "to"> {
@@ -109,7 +110,7 @@ export const SearchProfileItem = forwardRef<
 >(({ profile, ...props }, ref) => {
   return (
     <Anchor
-      to={"/users/" + profile.id}
+      to={"/user/" + profile.name}
       component={Link}
       sx={(theme) => ({
         borderRadius: theme.radius.md,
@@ -182,6 +183,13 @@ const AppLayout = () => {
 
   useEffect(() => setShowSearch(false), [location]);
 
+  const signOut = () => {
+    accessToken(null);
+    localStorage.removeItem("refreshToke");
+    // TODO: Clear Apollo cache
+    loggedIn(false);
+  };
+
   return (
     <AppShell
       padding="md"
@@ -236,7 +244,7 @@ const AppLayout = () => {
               </svg>
               <span>t</span>
             </Text>
-            {<Button
+            <Button
               component={Link}
               to="/"
               leftIcon={<TbHome size={24} />}
@@ -246,7 +254,7 @@ const AppLayout = () => {
               sx={{ display: "flex", justifyContent: "stretch" }}
             >
               Home
-            </Button>}
+            </Button>
             <Button
               component={Link}
               to="/discover"
@@ -439,8 +447,20 @@ const AppLayout = () => {
             bg={theme.fn.rgba(theme.colors.dark[6], 0.5)}
             sx={{ backdropFilter: "blur(10px)" }}
           >
-            <Menu.Item color="white" icon={<TbUser size={18} />}>
+            <Menu.Item
+              color="white"
+              icon={<TbUser size={18} />}
+              component={Link}
+              to={`/user/${data?.me.name}`}
+            >
               <Text size="lg">Profile</Text>
+            </Menu.Item>
+            <Menu.Item
+              color="white"
+              icon={<TbLogout size={18} />}
+              onClick={signOut}
+            >
+              <Text size="lg">Log out</Text>
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>

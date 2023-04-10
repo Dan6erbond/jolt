@@ -39,7 +39,7 @@ const Search = () => {
             <Card
               key={profile.id}
               component={Link}
-              to={"/users/" + profile.id}
+              to={"/user/" + profile.name}
               sx={(theme) => ({
                 background: theme.colors.dark[4],
                 ":hover": { background: theme.colors.dark[3] },

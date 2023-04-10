@@ -53,6 +53,7 @@ export type Movie = {
   tmdbId: Scalars['ID'];
   userReview?: Maybe<Review>;
   watched: Scalars['Boolean'];
+  watchedOn?: Maybe<Scalars['Time']>;
 };
 
 export type Mutation = {
@@ -66,6 +67,7 @@ export type Mutation = {
   reviewMovie: Review;
   reviewTv: Review;
   signInWithJellyfin: SignInResult;
+  toggleFollow: User;
   toggleWatched: Media;
 };
 
@@ -119,6 +121,11 @@ export type MutationSignInWithJellyfinArgs = {
 };
 
 
+export type MutationToggleFollowArgs = {
+  userId: Scalars['ID'];
+};
+
+
 export type MutationToggleWatchedArgs = {
   input: ToggleWatchedInput;
 };
@@ -132,6 +139,7 @@ export type Query = {
   movieSuggestions: Array<Movie>;
   search: SearchResult;
   tv?: Maybe<Tv>;
+  user?: Maybe<User>;
   userFeed: Array<FeedItem>;
   users: Array<User>;
 };
@@ -151,6 +159,12 @@ export type QuerySearchArgs = {
 export type QueryTvArgs = {
   id?: InputMaybe<Scalars['ID']>;
   tmdbId?: InputMaybe<Scalars['ID']>;
+};
+
+
+export type QueryUserArgs = {
+  id?: InputMaybe<Scalars['ID']>;
+  name?: InputMaybe<Scalars['String']>;
 };
 
 export type Recommendation = {
@@ -230,14 +244,19 @@ export type Tv = {
   tmdbId: Scalars['ID'];
   userReview?: Maybe<Review>;
   watched: Scalars['Boolean'];
+  watchedOn?: Maybe<Scalars['Time']>;
 };
 
 export type User = {
   __typename?: 'User';
+  followers: Array<User>;
   id: Scalars['ID'];
+  jellyfinId: Scalars['ID'];
   name: Scalars['String'];
   recommendations: Array<Recommendation>;
   recommendationsCreated: Array<Recommendation>;
+  reviews: Array<Review>;
+  userFollows: Scalars['Boolean'];
   watchlist: Array<Media>;
 };
 
@@ -392,6 +411,20 @@ export type RateTvMutationVariables = Exact<{
 
 export type RateTvMutation = { __typename?: 'Mutation', rateTv: { __typename?: 'Review', media: { __typename?: 'Movie' } | { __typename?: 'Tv', id: string, rating: number } } };
 
+export type UserByNameQueryVariables = Exact<{
+  name: Scalars['String'];
+}>;
+
+
+export type UserByNameQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, jellyfinId: string, name: string, userFollows: boolean, followers: Array<{ __typename?: 'User', id: string }>, reviews: Array<{ __typename?: 'Review', id: string, rating: number, review: string, media: { __typename?: 'Movie', id: string, tmdbId: string, title: string, posterPath: string, backdropPath: string } | { __typename?: 'Tv', id: string, tmdbId: string, name: string, posterPath: string, backdropPath: string }, createdBy: { __typename?: 'User', id: string, jellyfinId: string, name: string } }> } | null };
+
+export type ToggleFollowMutationVariables = Exact<{
+  userId: Scalars['ID'];
+}>;
+
+
+export type ToggleFollowMutation = { __typename?: 'Mutation', toggleFollow: { __typename?: 'User', id: string, userFollows: boolean, followers: Array<{ __typename?: 'User', id: string }> } };
+
 export type WatchlistQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -427,5 +460,7 @@ export const AddTvToWatchlistDocument = {"kind":"Document","definitions":[{"kind
 export const RemoveTvFromWatchlistDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RemoveTVFromWatchlist"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"removeFromWatchlist"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"mediaType"},"value":{"kind":"EnumValue","value":"TV"}},{"kind":"ObjectField","name":{"kind":"Name","value":"tmdbId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tv"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"addedToWatchlist"}}]}}]}}]}}]} as unknown as DocumentNode<RemoveTvFromWatchlistMutation, RemoveTvFromWatchlistMutationVariables>;
 export const ToggleTvWatchedDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleTVWatched"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"toggleWatched"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"ObjectValue","fields":[{"kind":"ObjectField","name":{"kind":"Name","value":"mediaType"},"value":{"kind":"EnumValue","value":"TV"}},{"kind":"ObjectField","name":{"kind":"Name","value":"tmdbId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}}}]}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tv"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"watched"}}]}}]}}]}}]} as unknown as DocumentNode<ToggleTvWatchedMutation, ToggleTvWatchedMutationVariables>;
 export const RateTvDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RateTv"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"rating"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Float"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"rateTv"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tmdbId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tmdbId"}}},{"kind":"Argument","name":{"kind":"Name","value":"rating"},"value":{"kind":"Variable","name":{"kind":"Name","value":"rating"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"media"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tv"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"rating"}}]}}]}}]}}]}}]} as unknown as DocumentNode<RateTvMutation, RateTvMutationVariables>;
+export const UserByNameDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"UserByName"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"user"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jellyfinId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"userFollows"}},{"kind":"Field","name":{"kind":"Name","value":"followers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}},{"kind":"Field","name":{"kind":"Name","value":"reviews"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"media"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Movie"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tmdbId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"posterPath"}},{"kind":"Field","name":{"kind":"Name","value":"backdropPath"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tv"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tmdbId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"posterPath"}},{"kind":"Field","name":{"kind":"Name","value":"backdropPath"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdBy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"jellyfinId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}},{"kind":"Field","name":{"kind":"Name","value":"rating"}},{"kind":"Field","name":{"kind":"Name","value":"review"}}]}}]}}]}}]} as unknown as DocumentNode<UserByNameQuery, UserByNameQueryVariables>;
+export const ToggleFollowDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleFollow"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"userId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"toggleFollow"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"userId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"userId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"userFollows"}},{"kind":"Field","name":{"kind":"Name","value":"followers"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}}]}}]}}]}}]} as unknown as DocumentNode<ToggleFollowMutation, ToggleFollowMutationVariables>;
 export const WatchlistDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Watchlist"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"me"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"watchlist"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"__typename"}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Movie"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tmdbId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"tagline"}},{"kind":"Field","name":{"kind":"Name","value":"releaseDate"}},{"kind":"Field","name":{"kind":"Name","value":"posterPath"}},{"kind":"Field","name":{"kind":"Name","value":"genres"}}]}},{"kind":"InlineFragment","typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Tv"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tmdbId"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"tagline"}},{"kind":"Field","name":{"kind":"Name","value":"firstAirDate"}},{"kind":"Field","name":{"kind":"Name","value":"posterPath"}},{"kind":"Field","name":{"kind":"Name","value":"genres"}}]}}]}}]}}]}}]} as unknown as DocumentNode<WatchlistQuery, WatchlistQueryVariables>;
 export const RefreshTokensDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RefreshTokens"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"refreshToken"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshTokens"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"refreshToken"},"value":{"kind":"Variable","name":{"kind":"Name","value":"refreshToken"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"accessToken"}},{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}}]}}]}}]} as unknown as DocumentNode<RefreshTokensMutation, RefreshTokensMutationVariables>;

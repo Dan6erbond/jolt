@@ -146,7 +146,10 @@ export const Home = () => {
           <Box key={item.id}>
             <Stack spacing="xs">
               <Group spacing="xs">
-                <Anchor component={Link} to={"/users/" + item.recommendedBy.id}>
+                <Anchor
+                  component={Link}
+                  to={"/user/" + item.recommendedBy.name}
+                >
                   <Group spacing="xs">
                     <Avatar radius="xl" />
                     <Text color={theme.colors.gray[4]}>
