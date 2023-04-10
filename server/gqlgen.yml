@@ -71,6 +71,8 @@ models:
         resolver: true
       recommendations:
         resolver: true
+      reviews:
+        resolver: true
   Recommendation:
     fields:
       recommendedBy:

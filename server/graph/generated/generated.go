@@ -71,6 +71,7 @@ type ComplexityRoot struct {
 		TmdbID              func(childComplexity int) int
 		UserReview          func(childComplexity int) int
 		Watched             func(childComplexity int) int
+		WatchedOn           func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -83,6 +84,7 @@ type ComplexityRoot struct {
 		ReviewMovie          func(childComplexity int, tmdbID string, review string) int
 		ReviewTv             func(childComplexity int, tmdbID string, review string) int
 		SignInWithJellyfin   func(childComplexity int, input model.SignInWithJellyfinInput) int
+		ToggleFollow         func(childComplexity int, userID string) int
 		ToggleWatched        func(childComplexity int, input model.ToggleWatchedInput) int
 	}
 
@@ -94,6 +96,7 @@ type ComplexityRoot struct {
 		MovieSuggestions func(childComplexity int) int
 		Search           func(childComplexity int, query string) int
 		Tv               func(childComplexity int, id *string, tmdbID *string) int
+		User             func(childComplexity int, id *string, name *string) int
 		UserFeed         func(childComplexity int) int
 		Users            func(childComplexity int) int
 	}
@@ -153,13 +156,18 @@ type ComplexityRoot struct {
 		TmdbID              func(childComplexity int) int
 		UserReview          func(childComplexity int) int
 		Watched             func(childComplexity int) int
+		WatchedOn           func(childComplexity int) int
 	}
 
 	User struct {
+		Followers              func(childComplexity int) int
 		ID                     func(childComplexity int) int
+		JellyfinID             func(childComplexity int) int
 		Name                   func(childComplexity int) int
 		Recommendations        func(childComplexity int) int
 		RecommendationsCreated func(childComplexity int) int
+		Reviews                func(childComplexity int) int
+		UserFollows            func(childComplexity int) int
 		Watchlist              func(childComplexity int) int
 	}
 }
@@ -173,6 +181,7 @@ type MovieResolver interface {
 	Genres(ctx context.Context, obj *models.Movie) ([]string, error)
 
 	Watched(ctx context.Context, obj *models.Movie) (bool, error)
+	WatchedOn(ctx context.Context, obj *models.Movie) (*time.Time, error)
 	AddedToWatchlist(ctx context.Context, obj *models.Movie) (bool, error)
 }
 type MutationResolver interface {
@@ -186,6 +195,7 @@ type MutationResolver interface {
 	AddToWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error)
 	RemoveFromWatchlist(ctx context.Context, input model.AddToWatchlistInput) (model.Media, error)
 	ToggleWatched(ctx context.Context, input model.ToggleWatchedInput) (model.Media, error)
+	ToggleFollow(ctx context.Context, userID string) (*models.User, error)
 }
 type QueryResolver interface {
 	DiscoverMovies(ctx context.Context) ([]*models.Movie, error)
@@ -196,6 +206,7 @@ type QueryResolver interface {
 	MovieSuggestions(ctx context.Context) ([]*models.Movie, error)
 	Tv(ctx context.Context, id *string, tmdbID *string) (*models.Tv, error)
 	Me(ctx context.Context) (*models.User, error)
+	User(ctx context.Context, id *string, name *string) (*models.User, error)
 	Users(ctx context.Context) ([]*models.User, error)
 }
 type RecommendationResolver interface {
@@ -224,12 +235,18 @@ type TvResolver interface {
 	Genres(ctx context.Context, obj *models.Tv) ([]string, error)
 
 	Watched(ctx context.Context, obj *models.Tv) (bool, error)
+	WatchedOn(ctx context.Context, obj *models.Tv) (*time.Time, error)
 	AddedToWatchlist(ctx context.Context, obj *models.Tv) (bool, error)
 }
 type UserResolver interface {
+	JellyfinID(ctx context.Context, obj *models.User) (string, error)
+
 	Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error)
 	Recommendations(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
 	RecommendationsCreated(ctx context.Context, obj *models.User) ([]*models.Recommendation, error)
+	UserFollows(ctx context.Context, obj *models.User) (bool, error)
+	Followers(ctx context.Context, obj *models.User) ([]*models.User, error)
+	Reviews(ctx context.Context, obj *models.User) ([]*models.Review, error)
 }
 
 type executableSchema struct {
@@ -352,6 +369,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Movie.Watched(childComplexity), true
 
+	case "Movie.watchedOn":
+		if e.complexity.Movie.WatchedOn == nil {
+			break
+		}
+
+		return e.complexity.Movie.WatchedOn(childComplexity), true
+
 	case "Mutation.addToWatchlist":
 		if e.complexity.Mutation.AddToWatchlist == nil {
 			break
@@ -460,6 +484,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SignInWithJellyfin(childComplexity, args["input"].(model.SignInWithJellyfinInput)), true
 
+	case "Mutation.toggleFollow":
+		if e.complexity.Mutation.ToggleFollow == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_toggleFollow_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ToggleFollow(childComplexity, args["userId"].(string)), true
+
 	case "Mutation.toggleWatched":
 		if e.complexity.Mutation.ToggleWatched == nil {
 			break
@@ -535,6 +571,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Tv(childComplexity, args["id"].(*string), args["tmdbId"].(*string)), true
+
+	case "Query.user":
+		if e.complexity.Query.User == nil {
+			break
+		}
+
+		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.User(childComplexity, args["id"].(*string), args["name"].(*string)), true
 
 	case "Query.userFeed":
 		if e.complexity.Query.UserFeed == nil {
@@ -807,12 +855,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Tv.Watched(childComplexity), true
 
+	case "Tv.watchedOn":
+		if e.complexity.Tv.WatchedOn == nil {
+			break
+		}
+
+		return e.complexity.Tv.WatchedOn(childComplexity), true
+
+	case "User.followers":
+		if e.complexity.User.Followers == nil {
+			break
+		}
+
+		return e.complexity.User.Followers(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.jellyfinId":
+		if e.complexity.User.JellyfinID == nil {
+			break
+		}
+
+		return e.complexity.User.JellyfinID(childComplexity), true
 
 	case "User.name":
 		if e.complexity.User.Name == nil {
@@ -834,6 +903,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.RecommendationsCreated(childComplexity), true
+
+	case "User.reviews":
+		if e.complexity.User.Reviews == nil {
+			break
+		}
+
+		return e.complexity.User.Reviews(childComplexity), true
+
+	case "User.userFollows":
+		if e.complexity.User.UserFollows == nil {
+			break
+		}
+
+		return e.complexity.User.UserFollows(childComplexity), true
 
 	case "User.watchlist":
 		if e.complexity.User.Watchlist == nil {
@@ -962,6 +1045,7 @@ extend type Query {
   genres: [String!]!
   releaseDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 
@@ -1057,6 +1141,7 @@ extend type Query {
   genres: [String!]!
   firstAirDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 
@@ -1071,14 +1156,19 @@ extend type Mutation {
 `, BuiltIn: false},
 	{Name: "../user.graphqls", Input: `type User {
   id: ID!
+  jellyfinId: ID!
   name: String!
   watchlist: [Media!]!
   recommendations: [Recommendation!]!
   recommendationsCreated: [Recommendation!]!
+  userFollows: Boolean!
+  followers: [User!]!
+  reviews: [Review!]!
 }
 
 extend type Query {
   me: User! @loggedIn
+  user(id: ID, name: String): User @loggedIn
   users: [User!]! @loggedIn
 }
 
@@ -1096,6 +1186,7 @@ extend type Mutation {
   addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   toggleWatched(input: ToggleWatchedInput!): Media! @loggedIn
+  toggleFollow(userId: ID!): User! @loggedIn
 }
 `, BuiltIn: false},
 }
@@ -1291,6 +1382,21 @@ func (ec *executionContext) field_Mutation_signInWithJellyfin_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_toggleFollow_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_toggleWatched_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1381,6 +1487,30 @@ func (ec *executionContext) field_Query_tv_args(ctx context.Context, rawArgs map
 		}
 	}
 	args["tmdbId"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalOID2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["name"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["name"] = arg1
 	return args, nil
 }
 
@@ -2100,6 +2230,64 @@ func (ec *executionContext) fieldContext_Movie_watched(ctx context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_watchedOn(ctx context.Context, field graphql.CollectedField, obj *models.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_watchedOn(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Movie().WatchedOn(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*time.Time); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time.Time`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_watchedOn(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2934,6 +3122,98 @@ func (ec *executionContext) fieldContext_Mutation_toggleWatched(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_toggleFollow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_toggleFollow(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().ToggleFollow(rctx, fc.Args["userId"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.User`, tmp)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_toggleFollow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_toggleFollow_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_discoverMovies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_discoverMovies(ctx, field)
 	if err != nil {
@@ -2998,6 +3278,8 @@ func (ec *executionContext) fieldContext_Query_discoverMovies(ctx context.Contex
 				return ec.fieldContext_Movie_releaseDate(ctx, field)
 			case "watched":
 				return ec.fieldContext_Movie_watched(ctx, field)
+			case "watchedOn":
+				return ec.fieldContext_Movie_watchedOn(ctx, field)
 			case "addedToWatchlist":
 				return ec.fieldContext_Movie_addedToWatchlist(ctx, field)
 			}
@@ -3069,6 +3351,8 @@ func (ec *executionContext) fieldContext_Query_discoverTvs(ctx context.Context, 
 				return ec.fieldContext_Tv_firstAirDate(ctx, field)
 			case "watched":
 				return ec.fieldContext_Tv_watched(ctx, field)
+			case "watchedOn":
+				return ec.fieldContext_Tv_watchedOn(ctx, field)
 			case "addedToWatchlist":
 				return ec.fieldContext_Tv_addedToWatchlist(ctx, field)
 			}
@@ -3180,6 +3464,8 @@ func (ec *executionContext) fieldContext_Query_movie(ctx context.Context, field 
 				return ec.fieldContext_Movie_releaseDate(ctx, field)
 			case "watched":
 				return ec.fieldContext_Movie_watched(ctx, field)
+			case "watchedOn":
+				return ec.fieldContext_Movie_watchedOn(ctx, field)
 			case "addedToWatchlist":
 				return ec.fieldContext_Movie_addedToWatchlist(ctx, field)
 			}
@@ -3342,6 +3628,8 @@ func (ec *executionContext) fieldContext_Query_movieSuggestions(ctx context.Cont
 				return ec.fieldContext_Movie_releaseDate(ctx, field)
 			case "watched":
 				return ec.fieldContext_Movie_watched(ctx, field)
+			case "watchedOn":
+				return ec.fieldContext_Movie_watchedOn(ctx, field)
 			case "addedToWatchlist":
 				return ec.fieldContext_Movie_addedToWatchlist(ctx, field)
 			}
@@ -3410,6 +3698,8 @@ func (ec *executionContext) fieldContext_Query_tv(ctx context.Context, field gra
 				return ec.fieldContext_Tv_firstAirDate(ctx, field)
 			case "watched":
 				return ec.fieldContext_Tv_watched(ctx, field)
+			case "watchedOn":
+				return ec.fieldContext_Tv_watchedOn(ctx, field)
 			case "addedToWatchlist":
 				return ec.fieldContext_Tv_addedToWatchlist(ctx, field)
 			}
@@ -3488,6 +3778,8 @@ func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field gra
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -3496,9 +3788,104 @@ func (ec *executionContext) fieldContext_Query_me(ctx context.Context, field gra
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, nil, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().User(rctx, fc.Args["id"].(*string), fc.Args["name"].(*string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*models.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *github.com/dan6erbond/jolt-server/pkg/models.User`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_user_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -3561,6 +3948,8 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -3569,6 +3958,12 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3819,6 +4214,8 @@ func (ec *executionContext) fieldContext_Recommendation_recommendedBy(ctx contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -3827,6 +4224,12 @@ func (ec *executionContext) fieldContext_Recommendation_recommendedBy(ctx contex
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3913,6 +4316,8 @@ func (ec *executionContext) fieldContext_Recommendation_recommendationFor(ctx co
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -3921,6 +4326,12 @@ func (ec *executionContext) fieldContext_Recommendation_recommendationFor(ctx co
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4314,6 +4725,8 @@ func (ec *executionContext) fieldContext_Review_createdBy(ctx context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -4322,6 +4735,12 @@ func (ec *executionContext) fieldContext_Review_createdBy(ctx context.Context, f
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4429,6 +4848,8 @@ func (ec *executionContext) fieldContext_SearchResult_profiles(ctx context.Conte
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
 			case "name":
 				return ec.fieldContext_User_name(ctx, field)
 			case "watchlist":
@@ -4437,6 +4858,12 @@ func (ec *executionContext) fieldContext_SearchResult_profiles(ctx context.Conte
 				return ec.fieldContext_User_recommendations(ctx, field)
 			case "recommendationsCreated":
 				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -5292,6 +5719,64 @@ func (ec *executionContext) fieldContext_Tv_watched(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Tv_watchedOn(ctx context.Context, field graphql.CollectedField, obj *models.Tv) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Tv_watchedOn(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Tv().WatchedOn(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.LoggedIn == nil {
+				return nil, errors.New("directive loggedIn is not implemented")
+			}
+			return ec.directives.LoggedIn(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*time.Time); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time.Time`, tmp)
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Tv_watchedOn(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Tv",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Tv_addedToWatchlist(ctx context.Context, field graphql.CollectedField, obj *models.Tv) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Tv_addedToWatchlist(ctx, field)
 	if err != nil {
@@ -5387,6 +5872,47 @@ func (ec *executionContext) fieldContext_User_id(ctx context.Context, field grap
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_jellyfinId(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_jellyfinId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().JellyfinID(rctx, obj)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_jellyfinId(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -5577,6 +6103,165 @@ func (ec *executionContext) fieldContext_User_recommendationsCreated(ctx context
 				return ec.fieldContext_Recommendation_recommendationFor(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Recommendation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_userFollows(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_userFollows(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().UserFollows(rctx, obj)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_userFollows(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_followers(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_followers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Followers(rctx, obj)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_followers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "jellyfinId":
+				return ec.fieldContext_User_jellyfinId(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "watchlist":
+				return ec.fieldContext_User_watchlist(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "recommendationsCreated":
+				return ec.fieldContext_User_recommendationsCreated(ctx, field)
+			case "userFollows":
+				return ec.fieldContext_User_userFollows(ctx, field)
+			case "followers":
+				return ec.fieldContext_User_followers(ctx, field)
+			case "reviews":
+				return ec.fieldContext_User_reviews(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_reviews(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Reviews(rctx, obj)
+	})
+
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Review)
+	fc.Result = res
+	return ec.marshalNReview2ᚕᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐReviewᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Review_id(ctx, field)
+			case "media":
+				return ec.fieldContext_Review_media(ctx, field)
+			case "review":
+				return ec.fieldContext_Review_review(ctx, field)
+			case "rating":
+				return ec.fieldContext_Review_rating(ctx, field)
+			case "upbolts":
+				return ec.fieldContext_Review_upbolts(ctx, field)
+			case "upboltedByCurrentUser":
+				return ec.fieldContext_Review_upboltedByCurrentUser(ctx, field)
+			case "createdBy":
+				return ec.fieldContext_Review_createdBy(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
 		},
 	}
 	return fc, nil
@@ -7637,6 +8322,23 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 				return innerFunc(ctx)
 
 			})
+		case "watchedOn":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Movie_watchedOn(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "addedToWatchlist":
 			field := field
 
@@ -7772,6 +8474,15 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_toggleWatched(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "toggleFollow":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_toggleFollow(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -7975,6 +8686,26 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "user":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
 				return res
 			}
 
@@ -8604,6 +9335,23 @@ func (ec *executionContext) _Tv(ctx context.Context, sel ast.SelectionSet, obj *
 				return innerFunc(ctx)
 
 			})
+		case "watchedOn":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Tv_watchedOn(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "addedToWatchlist":
 			field := field
 
@@ -8652,6 +9400,26 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "jellyfinId":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_jellyfinId(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "name":
 
 			out.Values[i] = ec._User_name(ctx, field, obj)
@@ -8709,6 +9477,66 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_recommendationsCreated(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "userFollows":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_userFollows(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "followers":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_followers(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
+		case "reviews":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_reviews(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10012,11 +10840,34 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v interface{}) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalTime(*v)
+	return res
+}
+
 func (ec *executionContext) marshalOTv2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐTv(ctx context.Context, sel ast.SelectionSet, v *models.Tv) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Tv(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋdan6erbondᚋjoltᚑserverᚋpkgᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._User(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

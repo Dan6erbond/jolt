@@ -12,5 +12,7 @@ type User struct {
 	Watched                []Watched
 	RecommendationsCreated []Recommendation `gorm:"foreignKey:RecommendationByID"`
 	Recommendations        []Recommendation `gorm:"foreignKey:RecommendationForID"`
-	Reviews                []Review         `gorm:"foreignKey:CreatedByID;"`
+	Reviews                []Review         `gorm:"foreignKey:CreatedByID"`
+	Following              []Follower       `gorm:"foreignKey:FollowerID"`
+	Followers              []Follower       `gorm:"foreignKey:UserID"`
 }

@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -223,6 +224,48 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 	}
 }
 
+// ToggleFollow is the resolver for the toggleFollow field.
+func (r *mutationResolver) ToggleFollow(ctx context.Context, userID string) (*models.User, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var followee models.User
+	err = r.db.Find(&followee, "id = ?", userID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var followers []*models.Follower
+
+	err = r.db.Model(&user).Where("user_id = ?", followee.ID).Association("Following").Find(&followers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(followers) == 0 {
+		err = r.db.Model(&user).Association("Following").Append(&models.Follower{UserID: followee.ID})
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &followee, nil
+	} else {
+		err = r.db.Delete(followers[0]).Error
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &followee, nil
+	}
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 	user, err := r.authService.GetUser(ctx)
@@ -232,6 +275,27 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id *string, name *string) (*models.User, error) {
+	var user models.User
+	if id != nil {
+		err := r.db.First(&user, "id = ?", id).Error
+
+		if err != nil {
+			return nil, err
+		}
+	} else if name != nil {
+		err := r.db.Where("name = ?", name).First(&user).Error
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, errors.New("id or name must be given")
+	}
+	return &user, nil
 }
 
 // Users is the resolver for the users field.
@@ -245,6 +309,11 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	}
 
 	return users, nil
+}
+
+// JellyfinID is the resolver for the jellyfinId field.
+func (r *userResolver) JellyfinID(ctx context.Context, obj *models.User) (string, error) {
+	return obj.JellyfinUserID, nil
 }
 
 // Watchlist is the resolver for the watchlist field.
@@ -308,6 +377,55 @@ func (r *userResolver) RecommendationsCreated(ctx context.Context, obj *models.U
 	}
 
 	return recommendations, nil
+}
+
+// UserFollows is the resolver for the userFollows field.
+func (r *userResolver) UserFollows(ctx context.Context, obj *models.User) (bool, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return false, err
+	}
+
+	followersCount := r.db.Model(&obj).Where("follower_id = ?", user.ID).Association("Followers").Count()
+
+	if followersCount == 0 {
+		return false, nil
+	} else {
+		return true, nil
+	}
+}
+
+// Followers is the resolver for the followers field.
+func (r *userResolver) Followers(ctx context.Context, obj *models.User) ([]*models.User, error) {
+	var followers []*models.Follower
+
+	err := r.db.Model(&obj).Preload("Follower").Association("Followers").Find(&followers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	followerUsers := make([]*models.User, len(followers))
+
+	for i, follower := range followers {
+		followerUsers[i] = &follower.Follower
+	}
+
+	return followerUsers, nil
+}
+
+// Reviews is the resolver for the reviews field.
+func (r *userResolver) Reviews(ctx context.Context, obj *models.User) ([]*models.Review, error) {
+	var reviews []*models.Review
+
+	err := r.db.Model(&obj).Association("Reviews").Find(&reviews)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return reviews, nil
 }
 
 // User returns generated.UserResolver implementation.

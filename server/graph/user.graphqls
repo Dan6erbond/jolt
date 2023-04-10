@@ -1,13 +1,18 @@
 type User {
   id: ID!
+  jellyfinId: ID!
   name: String!
   watchlist: [Media!]!
   recommendations: [Recommendation!]!
   recommendationsCreated: [Recommendation!]!
+  userFollows: Boolean!
+  followers: [User!]!
+  reviews: [Review!]!
 }
 
 extend type Query {
   me: User! @loggedIn
+  user(id: ID, name: String): User @loggedIn
   users: [User!]! @loggedIn
 }
 
@@ -25,4 +30,5 @@ extend type Mutation {
   addToWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   removeFromWatchlist(input: AddToWatchlistInput!): Media! @loggedIn
   toggleWatched(input: ToggleWatchedInput!): Media! @loggedIn
+  toggleFollow(userId: ID!): User! @loggedIn
 }
