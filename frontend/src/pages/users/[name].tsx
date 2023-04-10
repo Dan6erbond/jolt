@@ -1,0 +1,173 @@
+import { useMutation, useQuery } from "@apollo/client";
+import {
+  Avatar,
+  Button,
+  Card,
+  Flex,
+  Group,
+  Paper,
+  Rating,
+  Stack,
+  Tabs,
+  Text,
+  Title,
+} from "@mantine/core";
+import { useParams } from "react-router-dom";
+import { graphql } from "../../gql";
+import Poster from "../../components/poster";
+import UserAvatar from "../../components/userAvatar";
+
+const User = () => {
+  const { name } = useParams();
+  const { data } = useQuery(
+    graphql(`
+      query UserByName($name: String!) {
+        user(name: $name) {
+          id
+          jellyfinId
+          name
+          userFollows
+          followers {
+            id
+          }
+          reviews {
+            id
+            media {
+              ... on Movie {
+                id
+                tmdbId
+                title
+                posterPath
+                backdropPath
+              }
+              ... on Tv {
+                id
+                tmdbId
+                name
+                posterPath
+                backdropPath
+              }
+            }
+            createdBy {
+              id
+              jellyfinId
+              name
+            }
+            rating
+            review
+          }
+        }
+      }
+    `),
+    { variables: { name: name! } },
+  );
+
+  const [toggleFollow] = useMutation(
+    graphql(`
+      mutation ToggleFollow($userId: ID!) {
+        toggleFollow(userId: $userId) {
+          id
+          userFollows
+          followers {
+            id
+          }
+        }
+      }
+    `),
+    { variables: { userId: data?.user?.id } },
+  );
+
+  return (
+    <Flex
+      justify="space-between"
+      p="lg"
+      align="start"
+      wrap="wrap-reverse"
+      gap="md"
+    >
+      <Tabs
+        styles={(theme) => ({
+          tab: {
+            color: theme.colors.gray[4],
+            "&[data-active]": { color: "white" },
+          },
+          root: { minWidth: "400px", flex: 1 },
+        })}
+        defaultValue="reviews"
+      >
+        <Tabs.List>
+          <Tabs.Tab value="reviews">Reviews</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="reviews">
+          <Stack p="md">
+            {data?.user?.reviews.map((review) => (
+              <Paper key={review.id} p="md">
+                <Group>
+                  <Poster model={review.media} size="xs" />
+                  <Stack>
+                    <Title order={4} color="white">
+                      {review.media.__typename === "Movie"
+                        ? review.media.title
+                        : review.media.__typename === "Tv"
+                        ? review.media.name
+                        : ""}
+                    </Title>
+                    <Text color="white" sx={{ wordWrap: "normal" }}>
+                      {review.review}
+                    </Text>
+                    <Group>
+                      <Rating value={review.rating} readOnly />
+                      <Avatar radius="xl">
+                        {review.createdBy.name
+                          .split(" ")
+                          .map((name) => name[0].toUpperCase())
+                          .join("")}
+                      </Avatar>
+                      <Text color="white">{review.createdBy.name}</Text>
+                    </Group>
+                  </Stack>
+                </Group>
+              </Paper>
+            ))}
+          </Stack>
+        </Tabs.Panel>
+      </Tabs>
+      <Card bg="dark.3" radius="lg" miw={300} maw={400} sx={{ flex: 1 }}>
+        <Card.Section
+          sx={{ overflow: "visible" }}
+          miw={{ base: 250, sm: 300, lg: 350 }}
+          mih={{ base: 100, lg: 150 }}
+          pos="relative"
+          bg="dark.0"
+        >
+          {data?.user && (
+            <UserAvatar
+              radius="100%"
+              size="xl"
+              color="teal"
+              pos="absolute"
+              bottom={-40}
+              left={25}
+              user={data.user}
+            />
+          )}
+        </Card.Section>
+        <Card.Section p="md">
+          <Flex justify="end">
+            <Button variant="light" radius="lg" onClick={() => toggleFollow()}>
+              {data?.user?.userFollows ? "Following" : "Follow"}
+            </Button>
+          </Flex>
+          <Title color="white" order={2} mb="md">
+            {data?.user?.name}
+          </Title>
+          <Text color="gray.5">6 Reviews</Text>
+          <Text color="gray.5">{data?.user?.followers.length} Followers</Text>
+          <Text color="gray.5">246 Upbolts</Text>
+        </Card.Section>
+      </Card>
+    </Flex>
+  );
+};
+
+export default User;
