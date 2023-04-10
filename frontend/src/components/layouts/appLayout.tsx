@@ -2,7 +2,6 @@ import { useQuery, useReactiveVar } from "@apollo/client";
 import {
   Anchor,
   AppShell,
-  Avatar,
   Box,
   Button,
   Divider,
@@ -23,12 +22,12 @@ import { forwardRef, useEffect, useRef, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import {
   TbHome,
+  TbLogout,
   TbMovie,
   TbPlanet,
   TbSearch,
   TbUser,
   TbUserPlus,
-  TbLogout,
 } from "react-icons/tb";
 import {
   Form,
@@ -42,6 +41,7 @@ import { graphql } from "../../gql";
 import { useSearch } from "../../hooks/useSearch";
 import { accessToken, loggedIn, sessionError } from "../../utils/apolloClient";
 import Poster from "../poster";
+import UserAvatar from "../userAvatar";
 
 interface SearchResultItemProps extends Omit<LinkProps, "to"> {
   item:
@@ -125,12 +125,7 @@ export const SearchProfileItem = forwardRef<
       {...props}
     >
       <Group>
-        <Avatar radius="xl">
-          {profile.name
-            .split(" ")
-            .map((name) => name[0].toUpperCase())
-            .join("")}
-        </Avatar>
+        <UserAvatar radius="xl" user={profile} />
         <Text>{profile.name}</Text>
       </Group>
     </Anchor>
@@ -435,12 +430,9 @@ const AppLayout = () => {
                 },
               })}
             >
-              <Avatar color="cyan" radius="xl" size="lg">
-                {data?.me?.name
-                  .split(" ")
-                  .map((name) => name[0].toUpperCase())
-                  .join("")}
-              </Avatar>
+              {data?.me && (
+                <UserAvatar color="cyan" radius="xl" size="lg" user={data.me} />
+              )}
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown

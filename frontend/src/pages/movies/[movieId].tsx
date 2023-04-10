@@ -1,7 +1,6 @@
 import { useApolloClient, useMutation, useQuery } from "@apollo/client";
 import {
   ActionIcon,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -35,6 +34,7 @@ import {
 import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router-dom";
 import Poster from "../../components/poster";
+import UserAvatar from "../../components/userAvatar";
 import { UserSelectItem } from "../../components/userSelectItem";
 import { graphql } from "../../gql";
 
@@ -77,6 +77,7 @@ const Movie = () => {
             review
             createdBy {
               id
+              jellyfinId
               name
             }
           }
@@ -98,6 +99,7 @@ const Movie = () => {
       query Users {
         users {
           id
+          jellyfinId
           name
         }
       }
@@ -130,6 +132,7 @@ const Movie = () => {
                 review
                 createdBy {
                   id
+                  jellyfinId
                   name
                 }
               }
@@ -551,12 +554,7 @@ const Movie = () => {
                         </Text>
                         <Group>
                           <Rating value={2} readOnly />
-                          <Avatar radius="xl">
-                            {review.createdBy.name
-                              .split(" ")
-                              .map((name) => name[0].toUpperCase())
-                              .join("")}
-                          </Avatar>
+                          <UserAvatar radius="xl" user={review.createdBy} />
                           <Text color="white">{review.createdBy.name}</Text>
                         </Group>
                       </Stack>

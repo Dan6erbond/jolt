@@ -18,6 +18,7 @@ import {
 import { Link } from "react-router-dom";
 import RecommendationCard from "../components/recommendationCard";
 import ReviewCard from "../components/reviewCard";
+import UserAvatar from "../components/userAvatar";
 import { graphql } from "../gql";
 
 const LegacyFeed = () => {
@@ -128,6 +129,7 @@ export const Home = () => {
             }
             recommendedBy {
               id
+              jellyfinId
               name
             }
             message
@@ -151,7 +153,7 @@ export const Home = () => {
                   to={"/user/" + item.recommendedBy.name}
                 >
                   <Group spacing="xs">
-                    <Avatar radius="xl" />
+                    <UserAvatar radius="xl" user={item.recommendedBy} />
                     <Text color={theme.colors.gray[4]}>
                       {item.recommendedBy.name}
                     </Text>

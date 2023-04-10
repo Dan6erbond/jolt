@@ -1,8 +1,13 @@
 import { Avatar, AvatarProps } from "@mantine/core";
-import React, { forwardRef } from "react";
+import { forwardRef } from "react";
 
 interface UserAvatarProps extends AvatarProps {
-  user: { __typename?: "User"; name?: string; jellyfinId?: string };
+  user: {
+    __typename?: "User";
+    id?: string;
+    name?: string;
+    jellyfinId?: string;
+  };
 }
 
 const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(

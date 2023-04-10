@@ -1,6 +1,5 @@
 import {
   ActionIcon,
-  Avatar,
   Box,
   Group,
   Paper,
@@ -13,6 +12,7 @@ import {
 import { IconBolt, IconCircleChevronRight } from "@tabler/icons";
 import { Link } from "react-router-dom";
 import Poster from "../components/poster";
+import UserAvatar from "./userAvatar";
 
 interface RecommendationCardProps {
   recommendation: {
@@ -97,12 +97,11 @@ const RecommendationCard = ({ recommendation }: RecommendationCardProps) => {
             </Text>
             <Group>
               <Group spacing="xs" align="start">
-                <Avatar radius="xl" color="cyan">
-                  {recommendation.recommendedBy.name
-                    .split(" ")
-                    .map((name) => name[0].toUpperCase())
-                    .join("")}
-                </Avatar>
+                <UserAvatar
+                  radius="xl"
+                  color="cyan"
+                  user={recommendation.recommendedBy}
+                />
                 <Paper p="md" bg={theme.colors.dark[3]} miw="200px">
                   <Text color={theme.colors.gray[4]} size="sm">
                     {recommendation.recommendedBy.name}

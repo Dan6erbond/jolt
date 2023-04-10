@@ -1,5 +1,4 @@
 import {
-  Avatar,
   Box,
   Card,
   Flex,
@@ -14,6 +13,7 @@ import { IconCircleChevronRight } from "@tabler/icons";
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import Poster from "../components/poster";
+import UserAvatar from "../components/userAvatar";
 import { useSearch } from "../hooks/useSearch";
 
 const Search = () => {
@@ -46,12 +46,7 @@ const Search = () => {
               })}
             >
               <Group>
-                <Avatar radius="xl">
-                  {profile.name
-                    .split(" ")
-                    .map((name) => name[0].toUpperCase())
-                    .join("")}
-                </Avatar>
+                <UserAvatar radius="xl" user={profile} />
                 <Text color="white">{profile.name}</Text>
                 <Box sx={{ flex: 1 }} />
                 <IconCircleChevronRight color={theme.colors.blue[2]} />

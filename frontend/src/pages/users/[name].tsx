@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@apollo/client";
 import {
-  Avatar,
   Button,
   Card,
   Flex,
@@ -13,9 +12,9 @@ import {
   Title,
 } from "@mantine/core";
 import { useParams } from "react-router-dom";
-import { graphql } from "../../gql";
 import Poster from "../../components/poster";
 import UserAvatar from "../../components/userAvatar";
+import { graphql } from "../../gql";
 
 const User = () => {
   const { name } = useParams();
@@ -117,12 +116,7 @@ const User = () => {
                     </Text>
                     <Group>
                       <Rating value={review.rating} readOnly />
-                      <Avatar radius="xl">
-                        {review.createdBy.name
-                          .split(" ")
-                          .map((name) => name[0].toUpperCase())
-                          .join("")}
-                      </Avatar>
+                      <UserAvatar radius="xl" user={review.createdBy} />
                       <Text color="white">{review.createdBy.name}</Text>
                     </Group>
                   </Stack>
