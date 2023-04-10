@@ -29,7 +29,7 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 	user.Name = res.User.Name
 	user.AuthenticationSource = "jellyfin"
 	user.JellyfinAccessToken = res.AccessToken
-	user.JellyfinUserID = res.User.ID
+	user.JellyfinID = res.User.ID
 
 	err = r.db.Save(user).Error
 	if err != nil {
