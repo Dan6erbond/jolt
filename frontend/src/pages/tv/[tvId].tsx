@@ -455,17 +455,9 @@ const Tv = () => {
       <Tabs
         defaultValue="reviews"
         styles={(theme) => ({
-          tabLabel: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
-          },
-          tabIcon: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
+          tab: {
+            color: theme.colors.gray[4],
+            "&[data-active]": { color: "white" },
           },
         })}
       >
