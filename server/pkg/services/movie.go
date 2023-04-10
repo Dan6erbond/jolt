@@ -32,27 +32,39 @@ func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb bool) ([]*models.Mov
 }
 
 func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncWithTmdb bool) ([]*models.Movie, error) {
-	movies := make([]*models.Movie, len(movie.Results))
 
-	for i, m := range movie.Results {
-		dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb)
+	movieChan := make(chan *models.Movie, len(movie.Results))
+
+	for i := range movie.Results {
+		go func(m tmdb.DiscoverMovieResult) {
+			dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb)
+			if err != nil {
+				panic(err.Error())
+			}
+
+			if !syncWithTmdb {
+				dbMovie.Title = m.Title
+				dbMovie.BackdropPath = m.BackdropPath
+				dbMovie.PosterPath = m.PosterPath
+			}
+
+			movieChan <- dbMovie
+		}(movie.Results[i])
+	}
+
+	movies := make([]*models.Movie, len(movie.Results))
+	for i := 0; i < len(movie.Results); i++ {
+		movies[i] = <-movieChan
+	}
+
+	if !syncWithTmdb {
+		err := svc.db.Save(movies).Error
 		if err != nil {
 			return nil, err
 		}
-
-		dbMovie.Title = m.Title
-		dbMovie.BackdropPath = m.BackdropPath
-		dbMovie.PosterPath = m.PosterPath
-
-		movies[i] = dbMovie
 	}
 
-	err := svc.db.Save(movies).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return movies, err
+	return movies, nil
 }
 
 func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
