@@ -84,9 +84,22 @@ func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*mod
 	return &reviews[0], nil
 }
 
-// AvailableOnJellyfin is the resolver for the availableOnJellyfin field.
-func (r *movieResolver) AvailableOnJellyfin(ctx context.Context, obj *models.Movie) (bool, error) {
-	panic(fmt.Errorf("not implemented: AvailableOnJellyfin - availableOnJellyfin"))
+// JellyfinURL is the resolver for the jellyfinUrl field.
+func (r *movieResolver) JellyfinURL(ctx context.Context, obj *models.Movie) (*string, error) {
+	if obj.JellyfinID == "" {
+		return nil, nil
+	}
+
+	u, err := r.jellyfinClient.GetURL("")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: make this cleaner
+	jellyfinUrl := u.String() + fmt.Sprintf("/web/index.html#!/details?id=%s&serverId=%s", obj.JellyfinID, obj.JellyfinServerID)
+
+	return &jellyfinUrl, nil
 }
 
 // Genres is the resolver for the genres field.

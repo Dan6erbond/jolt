@@ -4,7 +4,7 @@ type Movie {
   rating: Float!
   reviews: [Review!]!
   userReview: Review @loggedIn
-  availableOnJellyfin: Boolean!
+  jellyfinUrl: String
   title: String!
   tagline: String!
   overview: String!
