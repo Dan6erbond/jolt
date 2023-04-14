@@ -122,6 +122,88 @@ func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*
 	return &result, nil
 }
 
+func (jc *Client) GetShowSeasons(token string, showID string, userID string, query url.Values) (*ShowSeasons, error) {
+	u, err := jc.GetURL(fmt.Sprintf("/Shows/%s/Seasons", showID))
+	if err != nil {
+		return nil, err
+	}
+
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var result ShowSeasons
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+func (jc *Client) GetShowEpisodes(token string, showID string, userID string, query url.Values) (*ShowEpisodes, error) {
+	u, err := jc.GetURL(fmt.Sprintf("/Shows/%s/Seasons", showID))
+	if err != nil {
+		return nil, err
+	}
+
+	u.RawQuery = query.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, ErrUnauthorized
+	}
+
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	var result ShowEpisodes
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func NewJellyfinClient() *Client {
 	return &Client{host: viper.GetString("jellyfin.host")}
 }
