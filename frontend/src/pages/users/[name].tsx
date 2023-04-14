@@ -11,6 +11,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { IconEye, IconMessage2, IconStar } from "@tabler/icons";
 import { useParams } from "react-router-dom";
 import Poster from "../../components/poster";
 import UserAvatar from "../../components/userAvatar";
@@ -55,6 +56,22 @@ const User = () => {
             rating
             review
           }
+          watched {
+            ... on Movie {
+              id
+              tmdbId
+              title
+              posterPath
+              backdropPath
+            }
+            ... on Tv {
+              id
+              tmdbId
+              name
+              posterPath
+              backdropPath
+            }
+          }
         }
       }
     `),
@@ -73,7 +90,6 @@ const User = () => {
         }
       }
     `),
-    { variables: { userId: data?.user?.id } },
   );
 
   return (
@@ -95,7 +111,19 @@ const User = () => {
         defaultValue="reviews"
       >
         <Tabs.List>
-          <Tabs.Tab value="reviews">Reviews</Tabs.Tab>
+          <Tabs.Tab value="reviews" icon={<IconStar size="0.8rem" />}>
+            Reviews
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="comments"
+            icon={<IconMessage2 size="0.8rem" />}
+            disabled
+          >
+            Comments
+          </Tabs.Tab>
+          <Tabs.Tab value="watched" icon={<IconEye size="0.8rem" />}>
+            Watched
+          </Tabs.Tab>
         </Tabs.List>
         <Tabs.Panel value="reviews">
           <Stack p="md">
@@ -125,8 +153,21 @@ const User = () => {
             ))}
           </Stack>
         </Tabs.Panel>
+        <Tabs.Panel value="watched">
+          <Flex wrap="wrap" p="md">
+            {data?.user?.watched.map((media) => (
+              <Poster model={media} size="md" key={media.id} />
+            ))}
+          </Flex>
+        </Tabs.Panel>
       </Tabs>
-      <Card bg="dark.3" radius="lg" miw={300} maw={400} sx={{ flex: 1 }}>
+      <Card
+        bg="dark.3"
+        radius="lg"
+        miw={300}
+        maw={400}
+        sx={{ flex: 1, margin: "0 auto" }}
+      >
         <Card.Section
           sx={{ overflow: "visible" }}
           miw={{ base: 250, sm: 300, lg: 350 }}
@@ -148,9 +189,17 @@ const User = () => {
         </Card.Section>
         <Card.Section p="md">
           <Flex justify="end">
-            <Button variant="light" radius="lg" onClick={() => toggleFollow()}>
-              {data?.user?.userFollows ? "Following" : "Follow"}
-            </Button>
+            {data?.user?.id && (
+              <Button
+                variant="light"
+                radius="lg"
+                onClick={() =>
+                  toggleFollow({ variables: { userId: data!.user!.id } })
+                }
+              >
+                {data?.user?.userFollows ? "Following" : "Follow"}
+              </Button>
+            )}
           </Flex>
           <Title color="white" order={2} mb="md">
             {data?.user?.name}
