@@ -45,7 +45,9 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 				movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID)
 
 				if err != nil {
-					panic(err.Error())
+					r.log.Error(err.Error())
+					mediaChan <- nil
+					return
 				}
 
 				mediaChan <- movie
@@ -53,7 +55,9 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 				tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID)
 
 				if err != nil {
-					panic(err.Error())
+					r.log.Error(err.Error())
+					mediaChan <- nil
+					return
 				}
 
 				mediaChan <- tv
