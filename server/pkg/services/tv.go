@@ -62,7 +62,7 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 		return nil, err
 	}
 
-	err = svc.SyncTvSeasons(tv)
+	err = svc.SyncTvSeasons(tv, tmdbTv)
 
 	if err != nil {
 		return nil, err
@@ -109,20 +109,14 @@ func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*
 
 	tv.TmdbID = uint(tmdbID)
 
-	syncedTv := &tv
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		syncedTv, err = svc.SyncTv(&tv)
+		_, err = svc.SyncTv(&tv)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = svc.db.Save(syncedTv).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return syncedTv, nil
+	return &tv, nil
 }
 
 func (svc *TvService) GetOrCreateTvByID(id uint, syncWithTmdb ...bool) (*models.Tv, error) {
@@ -168,21 +162,19 @@ func (svc *TvService) SyncTvSeasons(tv *models.Tv, tmdbTvs ...*tmdb.Tv) error {
 		return err
 	}
 
-	var seasons []models.Season
-	err = svc.db.Model(tv).Order("number asc").Association("Season").Find(&seasons)
+	var seasons []*models.Season
+	err = svc.db.Model(tv).Order("number asc").Preload("Tv").Association("Seasons").Find(&seasons)
 
 	if err != nil {
 		return err
 	}
-
-	var seasonsToInsert []models.Season
 
 OUTER:
 	for _, season := range tmdbTv.Seasons {
 		for i, s := range seasons {
 			if s.TmdbID == uint(season.ID) {
 				if i == len(seasons)-1 || !s.SyncedWithTmdb {
-					err = svc.SyncTvSeasonEpisodes(&s)
+					err = svc.SyncTvSeasonEpisodes(s)
 
 					if err != nil {
 						return err
@@ -194,10 +186,12 @@ OUTER:
 					s.Name = season.Name
 					s.Overview = season.Overview
 					s.PosterPath = season.PosterPath
+					s.SyncedWithTmdb = true
 
-					err = svc.db.Save(season).Error
+					err = svc.db.Save(s).Error
 
 					if err != nil {
+						fmt.Println("services/tv.go:201")
 						return err
 					}
 				}
@@ -206,36 +200,38 @@ OUTER:
 			}
 		}
 		s := models.Season{
-			TmdbID:         uint(season.ID),
-			Name:           season.Name,
-			Overview:       season.Overview,
-			PosterPath:     season.PosterPath,
-			Number:         uint(season.SeasonNumber),
-			SyncedWithTmdb: true,
+			TmdbID:     uint(season.ID),
+			Name:       season.Name,
+			Overview:   season.Overview,
+			PosterPath: season.PosterPath,
+			Number:     uint(season.SeasonNumber),
 		}
-		seasonsToInsert = append(seasonsToInsert, s)
+		svc.db.Model(tv).Association("Seasons").Append(&s)
 
 		err = svc.SyncTvSeasonEpisodes(&s)
 
 		if err != nil {
+			fmt.Println("services/tv.go:222")
 			return err
 		}
-	}
 
-	svc.db.Model(tv).Association("Seasons").Append(seasonsToInsert)
+		svc.db.Model(&s).Update("synced_with_tmdb", true)
+	}
 
 	return nil
 }
 
-func (svc *TvService) GetTvSeasons(tv *models.Tv) ([]*models.Season, error) {
-	err := svc.SyncTvSeasons(tv)
+func (svc *TvService) GetTvSeasons(tv *models.Tv, syncWithTmdb ...bool) ([]*models.Season, error) {
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
+		err := svc.SyncTvSeasons(tv)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var seasons []*models.Season
-	err = svc.db.Model(tv).Association("Seasons").Find(&seasons)
+	err := svc.db.Model(tv).Association("Seasons").Find(&seasons)
 
 	if err != nil {
 		return nil, err
@@ -245,20 +241,31 @@ func (svc *TvService) GetTvSeasons(tv *models.Tv) ([]*models.Season, error) {
 }
 
 func (svc *TvService) SyncTvSeasonEpisodes(season *models.Season) error {
-	if season.Tv.TmdbID == 0 {
-		panic("Tv must be preloaded for season")
+	var (
+		tv  *models.Tv
+		err error
+	)
+	if (season.CreatedAt == time.Time{}) {
+		tv = &season.Tv
+	} else {
+		tv, err = svc.GetOrCreateTvByID(season.TvID, false)
+
+		if err != nil {
+			return err
+		}
 	}
 
-	tmdbSeason, err := svc.tmdbClient.TvSeason(fmt.Sprint(season.Tv.TmdbID), fmt.Sprint(season.TmdbID))
+	tmdbSeason, err := svc.tmdbClient.TvSeason(fmt.Sprint(tv.TmdbID), season.Number)
 
 	if err != nil {
 		return err
 	}
 
-	var episodes []models.Episode
-	err = svc.db.Model(season).Order("").Association("Episodes").Find(&episodes)
+	var episodes []*models.Episode
+	err = svc.db.Model(season).Order("number asc").Association("Episodes").Find(&episodes)
 
 	if err != nil {
+		fmt.Println("services/tv.go:270")
 		return err
 	}
 
@@ -274,34 +281,48 @@ OUTER:
 					e.Name = ep.Name
 					e.Overview = ep.Overview
 					e.StillPath = ep.StillPath
+					e.SyncedWithTmdb = true
+
+					err = svc.db.Save(e).Error
+					if err != nil {
+						fmt.Println("services/tv.go:270")
+						return err
+					}
 				}
+
 				continue OUTER
 			}
-			episodesToInsert = append(episodesToInsert, models.Episode{
-				TmdbID:    uint(ep.ID),
-				Number:    uint(ep.EpisodeNumber),
-				SeasonID:  season.ID,
-				Name:      ep.Name,
-				Overview:  ep.Overview,
-				StillPath: ep.StillPath,
-			})
 		}
+		episodesToInsert = append(episodesToInsert, models.Episode{
+			TmdbID:         uint(ep.ID),
+			Number:         uint(ep.EpisodeNumber),
+			SeasonID:       season.ID,
+			Name:           ep.Name,
+			Overview:       ep.Overview,
+			StillPath:      ep.StillPath,
+			SyncedWithTmdb: true,
+		})
 	}
 
 	err = svc.db.Model(season).Association("Episodes").Append(episodesToInsert)
+	if err != nil {
+		fmt.Println("services/tv.go:270")
+	}
 
 	return err
 }
 
-func (svc *TvService) GetTvSeasonEpisodes(season *models.Season) ([]*models.Episode, error) {
-	err := svc.SyncTvSeasonEpisodes(season)
+func (svc *TvService) GetTvSeasonEpisodes(season *models.Season, syncWithTmdb ...bool) ([]*models.Episode, error) {
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
+		err := svc.SyncTvSeasonEpisodes(season)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var episodes []*models.Episode
-	err = svc.db.Model(season).Association("Episodes").Find(&episodes)
+	err := svc.db.Model(season).Association("Episodes").Find(&episodes)
 
 	if err != nil {
 		return nil, err
