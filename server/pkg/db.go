@@ -48,6 +48,12 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 			if err := db.AutoMigrate(&models.Tv{}); err != nil {
 				logger.Error(err.Error())
 			}
+			if err := db.AutoMigrate(&models.Season{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Episode{}); err != nil {
+				logger.Error(err.Error())
+			}
 			if err := db.AutoMigrate(&models.Review{}); err != nil {
 				logger.Error(err.Error())
 			}
