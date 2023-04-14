@@ -10,6 +10,8 @@ import {
   Tabs,
   Text,
   Title,
+  em,
+  getBreakpointValue,
 } from "@mantine/core";
 import { IconEye, IconMessage2, IconStar } from "@tabler/icons";
 import { useParams } from "react-router-dom";
@@ -106,7 +108,14 @@ const User = () => {
             color: theme.colors.gray[4],
             "&[data-active]": { color: "white" },
           },
-          root: { minWidth: "400px", flex: 1 },
+          root: {
+            flex: 1,
+            [`@media (max-width: ${em(
+              getBreakpointValue(theme.breakpoints.lg),
+            )})`]: {
+              flex: "0 0 100%",
+            },
+          },
         })}
         defaultValue="reviews"
       >
@@ -165,8 +174,15 @@ const User = () => {
         bg="dark.3"
         radius="lg"
         miw={300}
-        maw={400}
-        sx={{ flex: 1, margin: "0 auto" }}
+        sx={(theme) => ({
+          flex: 1,
+          margin: "0 auto",
+          [`@media (min-width: ${em(
+            getBreakpointValue(theme.breakpoints.lg),
+          )})`]: {
+            maxWidth: "400px",
+          },
+        })}
       >
         <Card.Section
           sx={{ overflow: "visible" }}
