@@ -9,7 +9,7 @@ import (
 
 type Movie struct {
 	gorm.Model
-	TmdbID                   uint
+	TmdbID                   uint `gorm:"uniqueIndex"`
 	SyncedWithTmdb           bool `gorm:"default:false"`
 	Title                    string
 	Tagline                  string
