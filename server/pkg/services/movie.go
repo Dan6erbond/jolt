@@ -79,15 +79,15 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 	return movies, nil
 }
 
-func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
+func (svc *MovieService) SyncMovie(movie *models.Movie) error {
 	if movie.SyncedWithTmdb {
-		return movie, nil
+		return nil
 	}
 
 	tmdbMovie, err := svc.tmdbClient.Movie(fmt.Sprint(movie.TmdbID))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	movie.TmdbID = uint(tmdbMovie.ID)
@@ -110,7 +110,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	if tmdbMovie.ReleaseDate != "" {
 		releaseDate, err := time.Parse(tmdb.DateFormat, tmdbMovie.ReleaseDate)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		movie.ReleaseDate = releaseDate
@@ -120,7 +120,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 	if movie.Certification == "" && !movie.CertificationDoesntExist {
 		releaseDates, err := svc.tmdbClient.MovieReleaseDates(fmt.Sprint(movie.TmdbID))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(releaseDates.Results) == 0 {
@@ -161,7 +161,9 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 
 	movie.SyncedWithTmdb = true
 
-	return movie, nil
+	err = svc.db.Save(movie).Error
+
+	return err
 }
 
 func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bool) (*models.Movie, error) {
@@ -175,7 +177,7 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bo
 	movie.TmdbID = uint(tmdbID)
 
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		_, err = svc.SyncMovie(&movie)
+		err = svc.SyncMovie(&movie)
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +200,7 @@ func (svc *MovieService) GetOrCreateMovieByID(id uint, syncWithTmdb ...bool) (*m
 	}
 
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		_, err = svc.SyncMovie(&movie)
+		err = svc.SyncMovie(&movie)
 		if err != nil {
 			return nil, err
 		}

@@ -55,21 +55,21 @@ func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV, syncWithTmdb bool)
 	return tvs, err
 }
 
-func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
+func (svc *TvService) SyncTv(tv *models.Tv) error {
 	tmdbTv, err := svc.tmdbClient.Tv(fmt.Sprint(tv.TmdbID))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = svc.SyncTvSeasons(tv, tmdbTv)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if tv.SyncedWithTmdb {
-		return tv, nil
+		return nil
 	}
 
 	tv.TmdbID = uint(tmdbTv.ID)
@@ -88,7 +88,7 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 	if tmdbTv.FirstAirDate != "" {
 		FirstAirDate, err := time.Parse(tmdb.DateFormat, tmdbTv.FirstAirDate)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		tv.FirstAirDate = FirstAirDate
@@ -96,7 +96,7 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 
 	tv.SyncedWithTmdb = true
 
-	return tv, nil
+	return nil
 }
 
 func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*models.Tv, error) {
@@ -110,7 +110,7 @@ func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*
 	tv.TmdbID = uint(tmdbID)
 
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		_, err = svc.SyncTv(&tv)
+		err = svc.SyncTv(&tv)
 		if err != nil {
 			return nil, err
 		}
@@ -132,20 +132,19 @@ func (svc *TvService) GetOrCreateTvByID(id uint, syncWithTmdb ...bool) (*models.
 		return nil, err
 	}
 
-	syncedTv := &tv
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		syncedTv, err = svc.SyncTv(&tv)
+		err = svc.SyncTv(&tv)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		err = svc.db.Save(syncedTv).Error
+		err = svc.db.Save(&tv).Error
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return syncedTv, nil
+	return &tv, nil
 }
 
 func (svc *TvService) SyncTvSeasons(tv *models.Tv, tmdbTvs ...*tmdb.Tv) error {
