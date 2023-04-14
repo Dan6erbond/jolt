@@ -164,7 +164,7 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bo
 	movie.TmdbID = uint(tmdbID)
 
 	syncedMovie := &movie
-	if len(syncWithTmdb) == 0 || syncWithTmdb[0] == true {
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
 		syncedMovie, err = svc.SyncMovie(&movie)
 		if err != nil {
 			return nil, err
@@ -188,7 +188,7 @@ func (svc *MovieService) GetOrCreateMovieByID(id uint, syncWithTmdb ...bool) (*m
 	}
 
 	syncedMovie := &movie
-	if len(syncWithTmdb) == 0 || syncWithTmdb[0] == true {
+	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
 		syncedMovie, err = svc.SyncMovie(&movie)
 		if err != nil {
 			return nil, err
