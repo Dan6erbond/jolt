@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY ./server .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./server
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./jolt
 
 FROM node:18 as frontend-builder
 
@@ -35,8 +35,9 @@ ENV JOLT_FRONTEND=/jolt/frontend
 WORKDIR /jolt
 
 COPY --from=frontend-builder /build/dist ./frontend
-COPY --from=backend-builder /build/server ./server
+COPY --from=backend-builder /build/jolt ./jolt
 
 EXPOSE 5001
 
-CMD [ "/jolt/server" ]
+ENTRYPOINT [ "./jolt" ]
+CMD [ "server" ]
