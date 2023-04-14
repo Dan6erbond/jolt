@@ -7,11 +7,13 @@ import (
 	"github.com/dan6erbond/jolt-server/internal/tmdb"
 	"github.com/dan6erbond/jolt-server/pkg/models"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type MovieService struct {
 	db         *gorm.DB
+	log        *zap.Logger
 	tmdbClient *tmdb.Client
 }
 
@@ -32,14 +34,15 @@ func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb bool) ([]*models.Mov
 }
 
 func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncWithTmdb bool) ([]*models.Movie, error) {
-
 	movieChan := make(chan *models.Movie, len(movie.Results))
 
 	for i := range movie.Results {
 		go func(m tmdb.DiscoverMovieResult) {
 			dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb)
 			if err != nil {
-				panic(err.Error())
+				svc.log.Sugar().Errorw(err.Error(), "movie", dbMovie)
+				movieChan <- nil
+				return
 			}
 
 			if !syncWithTmdb {
@@ -47,15 +50,23 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 				dbMovie.Overview = m.Overview
 				dbMovie.BackdropPath = m.BackdropPath
 				dbMovie.PosterPath = m.PosterPath
+				err = svc.db.Save(dbMovie).Error
+				if err != nil {
+					svc.log.Error(err.Error())
+					movieChan <- nil
+					return
+				}
 			}
 
 			movieChan <- dbMovie
 		}(movie.Results[i])
 	}
 
-	movies := make([]*models.Movie, len(movie.Results))
+	var movies []*models.Movie
 	for i := 0; i < len(movie.Results); i++ {
-		movies[i] = <-movieChan
+		if m := <-movieChan; m != nil {
+			movies = append(movies, m)
+		}
 	}
 
 	if !syncWithTmdb {
@@ -155,7 +166,7 @@ func (svc *MovieService) SyncMovie(movie *models.Movie) (*models.Movie, error) {
 
 func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bool) (*models.Movie, error) {
 	var movie models.Movie
-	err := svc.db.FirstOrCreate(&movie, "tmdb_id = ?", tmdbID).Error
+	err := svc.db.FirstOrInit(&movie, "tmdb_id = ?", tmdbID).Error
 
 	if err != nil {
 		return nil, err
@@ -168,6 +179,11 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bo
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		err = svc.db.Save(&movie).Error
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &movie, nil
@@ -175,28 +191,31 @@ func (svc *MovieService) GetOrCreateMovieByTmdbID(tmdbID int, syncWithTmdb ...bo
 
 func (svc *MovieService) GetOrCreateMovieByID(id uint, syncWithTmdb ...bool) (*models.Movie, error) {
 	var movie models.Movie
-	err := svc.db.FirstOrCreate(&movie, id).Error
+	err := svc.db.FirstOrInit(&movie, id).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	syncedMovie := &movie
 	if len(syncWithTmdb) == 0 || syncWithTmdb[0] {
-		syncedMovie, err = svc.SyncMovie(&movie)
+		_, err = svc.SyncMovie(&movie)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = svc.db.Save(&movie).Error
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = svc.db.Save(syncedMovie).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return syncedMovie, nil
+	return &movie, nil
 }
 
-func NewMovieService(db *gorm.DB, tmdbService *tmdb.Client) *MovieService {
-	return &MovieService{db, tmdbService}
+func NewMovieService(
+	log *zap.Logger,
+	db *gorm.DB,
+	tmdbService *tmdb.Client,
+) *MovieService {
+	return &MovieService{db, log, tmdbService}
 }

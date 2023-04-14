@@ -101,7 +101,7 @@ func (svc *TvService) SyncTv(tv *models.Tv) (*models.Tv, error) {
 
 func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*models.Tv, error) {
 	var tv models.Tv
-	err := svc.db.FirstOrCreate(&tv, "tmdb_id = ?", tmdbID).Error
+	err := svc.db.FirstOrInit(&tv, "tmdb_id = ?", tmdbID).Error
 
 	if err != nil {
 		return nil, err
@@ -114,6 +114,11 @@ func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		err = svc.db.Save(&tv).Error
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &tv, nil
@@ -121,7 +126,7 @@ func (svc *TvService) GetOrCreateTvByTmdbID(tmdbID int, syncWithTmdb ...bool) (*
 
 func (svc *TvService) GetOrCreateTvByID(id uint, syncWithTmdb ...bool) (*models.Tv, error) {
 	var tv models.Tv
-	err := svc.db.FirstOrCreate(&tv, id).Error
+	err := svc.db.FirstOrInit(&tv, id).Error
 
 	if err != nil {
 		return nil, err
@@ -133,11 +138,11 @@ func (svc *TvService) GetOrCreateTvByID(id uint, syncWithTmdb ...bool) (*models.
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	err = svc.db.Save(syncedTv).Error
-	if err != nil {
-		return nil, err
+	} else {
+		err = svc.db.Save(syncedTv).Error
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return syncedTv, nil

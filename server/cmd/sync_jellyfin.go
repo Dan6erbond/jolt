@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	zapgorm "moul.io/zapgorm2"
 )
 
 // syncJellyfinCmd represents the syncjellyfin command
@@ -26,14 +26,17 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		logger := pkg.NewLogger()
+		log := zapgorm.New(logger)
+		log.SetAsDefault()
 		db, err := gorm.Open(postgres.Open(pkg.GetDsn()), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Info),
+			Logger: log,
 		})
 		if err != nil {
 			panic(err)
 		}
 
-		movieService := services.NewMovieService(db, tmdb.NewTMDBService())
+		movieService := services.NewMovieService(logger, db, tmdb.NewTMDBService())
 		tvService := services.NewTvService(db, tmdb.NewTMDBService())
 		jc := jellyfin.NewJellyfinClient()
 
