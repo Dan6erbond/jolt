@@ -1,5 +1,7 @@
 FROM golang:1.18-alpine
 
+ENV JOLT_ENABLE_FRONTEND=false
+
 WORKDIR /app
 
 COPY go.mod ./
@@ -9,8 +11,9 @@ RUN go mod download
 
 COPY ./ ./
 
-RUN go build -o ./server
+RUN go build -o ./jolt
 
 EXPOSE 5001
 
-CMD [ "./server" ]
+ENTRYPOINT [ "./jolt" ]
+CMD [ "server" ]
