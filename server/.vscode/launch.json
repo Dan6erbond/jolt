@@ -10,7 +10,20 @@
       "request": "launch",
       "mode": "auto",
       "program": "main.go",
-      "args": ["server"]
+      "args": [
+        "server"
+      ]
+    },
+    {
+      "name": "Run sync",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "main.go",
+      "args": [
+        "sync",
+        "jellyfin"
+      ]
     }
   ]
 }
