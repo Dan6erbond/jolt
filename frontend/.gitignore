@@ -26,3 +26,4 @@ dist-ssr
 # Custom
 favicon_package_*
 .env*
+vite.config.ts.*
