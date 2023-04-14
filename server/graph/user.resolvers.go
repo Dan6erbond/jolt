@@ -365,8 +365,8 @@ func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.M
 		return nil, err
 	}
 
-	medias := make([]model.Media, len(watched))
-	for i, w := range watched {
+	var medias []model.Media
+	for _, w := range watched {
 		switch w.MediaType {
 		case "movies":
 			movie, err := r.movieService.GetOrCreateMovieByID(w.MediaID)
@@ -375,7 +375,7 @@ func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.M
 				return nil, err
 			}
 
-			medias[i] = movie
+			medias = append(medias, movie)
 		case "tvs":
 			tv, err := r.tvService.GetOrCreateTvByID(w.MediaID)
 
@@ -383,7 +383,7 @@ func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.M
 				return nil, err
 			}
 
-			medias[i] = tv
+			medias = append(medias, tv)
 		}
 	}
 
