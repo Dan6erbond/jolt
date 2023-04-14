@@ -182,7 +182,10 @@ const AppLayout = () => {
     }
   }, [debouncedSearch, setShowSearch]);
 
-  useEffect(() => setShowSearch(false), [location]);
+  useEffect(() => {
+    setShowSearch(false);
+    setOpened(false);
+  }, [location, setShowSearch, setOpened]);
 
   const signOut = () => {
     accessToken(null);
@@ -196,7 +199,7 @@ const AppLayout = () => {
       padding="md"
       header={
         <Header
-          height={100}
+          height={{ base: 90, md: 100 }}
           p="md"
           px={{ base: "md", md: "xl" }}
           sx={(theme) => ({
@@ -210,7 +213,7 @@ const AppLayout = () => {
             zIndex: 200,
           })}
         >
-          <Group align="center">
+          <Group align="center" sx={{ flexWrap: "nowrap" }}>
             <MediaQuery largerThan="sm" styles={{ display: "none" }}>
               <Burger
                 opened={opened}
@@ -368,54 +371,56 @@ const AppLayout = () => {
                 </Box>
               )}
             </Form>
-            <Menu position="bottom-end">
-              <Menu.Target>
-                <UnstyledButton
-                  sx={(theme) => ({
-                    borderRadius: "100%",
-                    color:
-                      theme.colorScheme === "dark"
-                        ? theme.colors.dark[0]
-                        : theme.black,
-                    "&:hover": {
-                      backgroundColor:
+            <MediaQuery smallerThan="sm" styles={{ display: "none" }}>
+              <Menu position="bottom-end">
+                <Menu.Target>
+                  <UnstyledButton
+                    sx={(theme) => ({
+                      borderRadius: "100%",
+                      color:
                         theme.colorScheme === "dark"
-                          ? theme.colors.dark[8]
-                          : theme.colors.gray[0],
-                    },
-                  })}
+                          ? theme.colors.dark[0]
+                          : theme.black,
+                      "&:hover": {
+                        backgroundColor:
+                          theme.colorScheme === "dark"
+                            ? theme.colors.dark[8]
+                            : theme.colors.gray[0],
+                      },
+                    })}
+                  >
+                    {data?.me && (
+                      <UserAvatar
+                        color="cyan"
+                        radius="xl"
+                        size="lg"
+                        user={data.me}
+                      />
+                    )}
+                  </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown
+                  bg={theme.fn.rgba(theme.colors.dark[6], 0.5)}
+                  sx={{ backdropFilter: "blur(10px)" }}
                 >
-                  {data?.me && (
-                    <UserAvatar
-                      color="cyan"
-                      radius="xl"
-                      size="lg"
-                      user={data.me}
-                    />
-                  )}
-                </UnstyledButton>
-              </Menu.Target>
-              <Menu.Dropdown
-                bg={theme.fn.rgba(theme.colors.dark[6], 0.5)}
-                sx={{ backdropFilter: "blur(10px)" }}
-              >
-                <Menu.Item
-                  color="white"
-                  icon={<TbUser size={18} />}
-                  component={Link}
-                  to={`/user/${data?.me.name}`}
-                >
-                  <Text size="lg">Profile</Text>
-                </Menu.Item>
-                <Menu.Item
-                  color="white"
-                  icon={<TbLogout size={18} />}
-                  onClick={signOut}
-                >
-                  <Text size="lg">Log out</Text>
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                  <Menu.Item
+                    color="white"
+                    icon={<TbUser size={18} />}
+                    component={Link}
+                    to={`/user/${data?.me.name}`}
+                  >
+                    <Text size="lg">Profile</Text>
+                  </Menu.Item>
+                  <Menu.Item
+                    color="white"
+                    icon={<TbLogout size={18} />}
+                    onClick={signOut}
+                  >
+                    <Text size="lg">Log out</Text>
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </MediaQuery>
           </Group>
         </Header>
       }
@@ -434,75 +439,131 @@ const AppLayout = () => {
             borderRight: `1px solid ${theme.colors.dark[3]}`,
           })}
         >
-          <Stack align="stretch" py="sm">
-            <Button
-              component={Link}
-              to="/"
-              leftIcon={<TbHome size={24} />}
-              variant="subtle"
-              color={location.pathname === "/" ? "indigo" : "gray"}
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Home
-            </Button>
-            <Button
-              component={Link}
-              to="/discover"
-              leftIcon={<TbPlanet color="inherit" size={24} />}
-              variant="subtle"
-              color={location.pathname === "/discover" ? "indigo" : "gray"}
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Discover
-            </Button>
-            <Button
-              component={Link}
-              to="/recommendations"
-              leftIcon={<TbUserPlus color="inherit" size={24} />}
-              variant="subtle"
-              color={
-                location.pathname === "/recommendations" ? "indigo" : "gray"
-              }
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Recommendations
-            </Button>
-            <Button
-              component={Link}
-              to="/mash-up"
-              leftIcon={<TbMovie color="inherit" size={24} />}
-              variant="subtle"
-              color={location.pathname === "/mash-up" ? "indigo" : "gray"}
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Mash-Up
-            </Button>
-            <Button
-              component={Link}
-              to="/watchlist"
-              leftIcon={<AiOutlineFieldTime color="inherit" size={24} />}
-              variant="subtle"
-              color={location.pathname === "/watchlist" ? "indigo" : "gray"}
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Watchlist
-            </Button>
-            <Button
-              component={Link}
-              to="/watched"
-              leftIcon={<TbEyeCheck color="inherit" size={24} />}
-              variant="subtle"
-              color={location.pathname === "/watched" ? "indigo" : "gray"}
-              size="lg"
-              sx={{ display: "flex", justifyContent: "stretch" }}
-            >
-              Watched
-            </Button>
+          <Stack h="100%">
+            <Stack align="stretch" py="sm">
+              <Button
+                component={Link}
+                to="/"
+                leftIcon={<TbHome size={24} />}
+                variant="subtle"
+                color={location.pathname === "/" ? "indigo" : "gray"}
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Home
+              </Button>
+              <Button
+                component={Link}
+                to="/discover"
+                leftIcon={<TbPlanet color="inherit" size={24} />}
+                variant="subtle"
+                color={location.pathname === "/discover" ? "indigo" : "gray"}
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Discover
+              </Button>
+              <Button
+                component={Link}
+                to="/recommendations"
+                leftIcon={<TbUserPlus color="inherit" size={24} />}
+                variant="subtle"
+                color={
+                  location.pathname === "/recommendations" ? "indigo" : "gray"
+                }
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Recommendations
+              </Button>
+              <Button
+                component={Link}
+                to="/mash-up"
+                leftIcon={<TbMovie color="inherit" size={24} />}
+                variant="subtle"
+                color={location.pathname === "/mash-up" ? "indigo" : "gray"}
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Mash-Up
+              </Button>
+              <Button
+                component={Link}
+                to="/watchlist"
+                leftIcon={<AiOutlineFieldTime color="inherit" size={24} />}
+                variant="subtle"
+                color={location.pathname === "/watchlist" ? "indigo" : "gray"}
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Watchlist
+              </Button>
+              <Button
+                component={Link}
+                to="/watched"
+                leftIcon={<TbEyeCheck color="inherit" size={24} />}
+                variant="subtle"
+                color={location.pathname === "/watched" ? "indigo" : "gray"}
+                size="lg"
+                sx={{ display: "flex", justifyContent: "stretch" }}
+              >
+                Watched
+              </Button>
+            </Stack>
+            <Box sx={{ flexGrow: 1 }} />
+            <MediaQuery largerThan="sm" styles={{ display: "none" }}>
+              <Menu position="top-end">
+                <Menu.Target>
+                  <UnstyledButton
+                    p="md"
+                    sx={(theme) => ({
+                      color:
+                        theme.colorScheme === "dark"
+                          ? theme.colors.dark[0]
+                          : theme.black,
+                      "&:hover": {
+                        backgroundColor:
+                          theme.colorScheme === "dark"
+                            ? theme.colors.dark[8]
+                            : theme.colors.gray[0],
+                      },
+                    })}
+                  >
+                    {data?.me && (
+                      <Group>
+                        <UserAvatar
+                          color="cyan"
+                          radius="xl"
+                          size="lg"
+                          user={data.me}
+                        />
+                        <Text color="white">{data.me.name}</Text>
+                      </Group>
+                    )}
+                  </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown
+                  bg={theme.fn.rgba(theme.colors.dark[6], 0.5)}
+                  sx={{ backdropFilter: "blur(10px)" }}
+                >
+                  <Menu.Item
+                    color="white"
+                    icon={<TbUser size={18} />}
+                    component={Link}
+                    to={`/user/${data?.me.name}`}
+                  >
+                    <Text size="lg">Profile</Text>
+                  </Menu.Item>
+                  <Menu.Item
+                    color="white"
+                    icon={<TbLogout size={18} />}
+                    onClick={signOut}
+                  >
+                    <Text size="lg">Log out</Text>
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </MediaQuery>
           </Stack>
         </Navbar>
       }
