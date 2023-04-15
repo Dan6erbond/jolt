@@ -5,10 +5,12 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/dan6erbond/jolt-server/graph/model"
 	"github.com/dan6erbond/jolt-server/pkg/models"
+	"gorm.io/gorm"
 )
 
 // SignInWithJellyfin is the resolver for the signInWithJellyfin field.
@@ -72,6 +74,9 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 
 	isValid, err := r.authService.ValidateRefreshToken(_refreshToken)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("refresh token not found")
+		}
 		return nil, err
 	}
 
