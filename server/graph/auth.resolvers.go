@@ -86,19 +86,12 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 
 	var dbRefreshToken models.RefreshToken
 
-	err = r.db.First(&dbRefreshToken, "id = ?", refreshTokenClaims.ID).Error
+	err = r.db.Preload("User").First(&dbRefreshToken, refreshTokenClaims.ID).Error
 	if err != nil {
 		return nil, err
 	}
 
-	var user models.User
-
-	err = r.db.First(&user, dbRefreshToken.UserID).Error
-	if err != nil {
-		return nil, err
-	}
-
-	accessToken, err := r.authService.GenerateAccessToken(user)
+	accessToken, err := r.authService.GenerateAccessToken(dbRefreshToken.User)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +101,7 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 		return nil, err
 	}
 
-	newRefreshToken, err := r.authService.GenerateRefreshToken(user)
+	newRefreshToken, err := r.authService.GenerateRefreshToken(dbRefreshToken.User)
 	if err != nil {
 		return nil, err
 	}
