@@ -1,3 +1,12 @@
+## [0.5.2](https://github.com/Dan6erbond/jolt/compare/v0.5.1...v0.5.2) (2023-04-15)
+
+
+### Bug Fixes
+
+* :bug: use lowercase repo in docker build tags ([3472c71](https://github.com/Dan6erbond/jolt/commit/3472c7122986c1668c79710105a7547c98bcc6c8))
+
+
+
 ## [0.5.1](https://github.com/Dan6erbond/jolt/compare/v0.5.0...v0.5.1) (2023-04-15)
 
 
