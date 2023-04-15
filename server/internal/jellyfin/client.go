@@ -41,6 +41,38 @@ func (jc *Client) GetUserAuthorization(token string) string {
 	return BaseToken + fmt.Sprintf(", Token=\"%s\"", token)
 }
 
+func (jc *Client) DoAuthenticatedRequest(u *url.URL, token string, result interface{}) error {
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return ErrUnauthorized
+	}
+
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(body, result)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (jc *Client) AuthenticateUserByName(username string, password string) (*AuthenticateUserByNameResult, error) {
 	u, err := jc.GetURL("/Users/AuthenticateByName")
 	if err != nil {
@@ -89,32 +121,9 @@ func (jc *Client) GetUserItems(token string, userID string, query url.Values) (*
 
 	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, ErrUnauthorized
-	}
-
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-
 	var result UserItems
 
-	err = json.Unmarshal(body, &result)
+	err = jc.DoAuthenticatedRequest(u, token, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -130,32 +139,9 @@ func (jc *Client) GetShowSeasons(token string, showID string, userID string, que
 
 	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, ErrUnauthorized
-	}
-
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-
 	var result ShowSeasons
 
-	err = json.Unmarshal(body, &result)
+	err = jc.DoAuthenticatedRequest(u, token, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -171,32 +157,9 @@ func (jc *Client) GetShowEpisodes(token string, showID string, userID string, qu
 
 	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", jc.GetUserAuthorization(token))
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, ErrUnauthorized
-	}
-
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-
 	var result ShowEpisodes
 
-	err = json.Unmarshal(body, &result)
+	err = jc.DoAuthenticatedRequest(u, token, &result)
 	if err != nil {
 		return nil, err
 	}
