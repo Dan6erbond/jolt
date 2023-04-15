@@ -62,5 +62,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ needs.tag-and-generate-changelog.tag }}
+          tags: ${{ needs.tag-and-generate-changelog.outputs.tag }}
           labels: ${{ steps.meta.outputs.labels }}
