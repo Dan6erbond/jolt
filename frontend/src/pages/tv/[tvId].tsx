@@ -328,18 +328,29 @@ const Tv = () => {
           </Form>
         </Stack>
       </Modal>
-      <Box style={{ position: "relative", overflow: "hidden" }} mih="250px">
+      <Box style={{ position: "relative", zIndex: 0 }} mih="250px">
         <Image
           src={
             data?.tv &&
             `https://image.tmdb.org/t/p/original${data?.tv.backdropPath}`
           }
           styles={{
+            root: {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -10,
+            },
+            figure: { height: "100%" },
+            imageWrapper: { height: "100%" },
             image: {
-              maxHeight: "min(50vh, 600px)",
               objectPosition: "center top",
             },
           }}
+          height="100%"
+          fit="cover"
         />
         <Box
           style={{
@@ -350,30 +361,14 @@ const Tv = () => {
             left: 0,
             right: 0,
             bottom: 0,
+            zIndex: -10,
           }}
         />
         {data?.tv && (
-          <Box
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          >
+          <Box>
             <Stack p="md" spacing="sm">
               <Flex align="end" gap="md">
-                <Image
-                  src={`https://image.tmdb.org/t/p/original${data?.tv.posterPath}`}
-                  height={200}
-                  width={2000 * (200 / 3000)}
-                  alt={data?.tv.name}
-                  withPlaceholder
-                  placeholder={
-                    <Skeleton height={300} width={2000 * (300 / 3000)} />
-                  }
-                  styles={{ image: { borderRadius: "10px" } }}
-                />
+                <Poster model={data?.tv} size="sm" />
                 <Stack spacing="xs">
                   <Title color="white">
                     {data?.tv.name}{" "}

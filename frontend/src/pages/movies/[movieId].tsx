@@ -341,18 +341,29 @@ const Movie = () => {
           </Form>
         </Stack>
       </Modal>
-      <Box style={{ position: "relative", overflow: "hidden" }} mih="250px">
+      <Box style={{ position: "relative", zIndex: 0 }} mih="250px">
         <Image
           src={
             data?.movie &&
             `https://image.tmdb.org/t/p/original${data?.movie.backdropPath}`
           }
           styles={{
+            root: {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -10,
+            },
+            figure: { height: "100%" },
+            imageWrapper: { height: "100%" },
             image: {
-              maxHeight: "min(50vh, 600px)",
               objectPosition: "center top",
             },
           }}
+          height="100%"
+          fit="cover"
         />
         <Box
           style={{
@@ -363,30 +374,14 @@ const Movie = () => {
             left: 0,
             right: 0,
             bottom: 0,
+            zIndex: -10,
           }}
         />
         {data?.movie && (
-          <Box
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          >
+          <Box>
             <Stack p="md" spacing="sm">
-              <Flex align="end" gap="md">
-                <Image
-                  src={`https://image.tmdb.org/t/p/original${data?.movie.posterPath}`}
-                  height={200}
-                  width={2000 * (200 / 3000)}
-                  alt={data?.movie.title}
-                  withPlaceholder
-                  placeholder={
-                    <Skeleton height={300} width={2000 * (300 / 3000)} />
-                  }
-                  styles={{ image: { borderRadius: "10px" } }}
-                />
+              <Flex align="end" gap="md" wrap="wrap">
+                <Poster model={data?.movie} size="sm" />
                 <Stack spacing="xs">
                   <Title color="white">
                     {data?.movie.title}{" "}
