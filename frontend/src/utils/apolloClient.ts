@@ -53,12 +53,14 @@ const authLink = setContext(async (_, { headers }) => {
         `),
         variables: { refreshToken },
       });
+      console.log(errors);
       if (
         errors?.[0].message &&
         refreshTokenErrors.includes(errors?.[0].message)
       ) {
         localStorage.removeItem("refreshToken");
         sessionError("REFRESH_TOKEN_EXPIRED");
+        console.log("REFRESH_TOKEN_EXPIRED");
         refreshingTokens(false);
       }
       if (data) {
@@ -89,6 +91,14 @@ const errorLink = onError(
     if (graphQLErrors) {
       if (graphQLErrors[0].message === "you aren't authenticated") {
         accessToken(null);
+      }
+      if (
+        graphQLErrors[0].message &&
+        refreshTokenErrors.includes(graphQLErrors[0].message)
+      ) {
+        localStorage.removeItem("refreshToken");
+        sessionError("REFRESH_TOKEN_EXPIRED");
+        refreshingTokens(false);
       }
       graphQLErrors.forEach(({ message, locations, path }) =>
         console.error(
