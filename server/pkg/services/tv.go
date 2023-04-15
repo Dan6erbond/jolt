@@ -96,6 +96,12 @@ func (svc *TvService) SyncTv(tv *models.Tv) error {
 
 	tv.SyncedWithTmdb = true
 
+	err = svc.db.Save(tv).Error
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
