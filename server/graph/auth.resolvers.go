@@ -21,7 +21,7 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 
 	var user models.User
 
-	err = r.db.FirstOrCreate(&user, "name = ?", res.User.Name).Error
+	err = r.db.FirstOrInit(&user, "name = ?", res.User.Name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (r *mutationResolver) SignInWithJellyfin(ctx context.Context, input model.S
 	user.JellyfinAccessTokenIsValid = true
 	user.JellyfinID = res.User.ID
 
-	err = r.db.Save(user).Error
+	err = r.db.Save(&user).Error
 	if err != nil {
 		return nil, err
 	}
