@@ -44,6 +44,7 @@ const Login = () => {
     });
     // eslint-disable-next-line no-empty
     if (errors) {
+      console.error(errors);
     } else if (data) {
       loggedIn(true);
       accessToken(data.signInWithJellyfin.accessToken);
