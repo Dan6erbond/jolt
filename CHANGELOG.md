@@ -1,4 +1,13 @@
-# [0.2.0](https://github.com/Dan6erbond/jolt/compare/v0.1.0...v0.2.0) (2023-04-15)
+# [0.3.0](https://github.com/Dan6erbond/jolt/compare/v0.2.1...v0.3.0) (2023-04-15)
+
+
+### Features
+
+* testing ci ([be529d4](https://github.com/Dan6erbond/jolt/commit/be529d4130f122baf208b908a607606e7a599759))
+
+
+
+## [0.2.1](https://github.com/Dan6erbond/jolt/compare/v0.2.0...v0.2.1) (2023-04-15)
 
 
 ### Bug Fixes
