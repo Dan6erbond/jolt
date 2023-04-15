@@ -17,14 +17,14 @@ type MovieService struct {
 	tmdbClient *tmdb.Client
 }
 
-func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb bool) ([]*models.Movie, error) {
+func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb ...bool) ([]*models.Movie, error) {
 	movie, err := svc.tmdbClient.DiscoverMovie()
 
 	if err != nil {
 		return nil, err
 	}
 
-	movies, err := svc.SaveTmdbDiscoverMovies(movie, syncWithTmdb)
+	movies, err := svc.SaveTmdbDiscoverMovies(movie, syncWithTmdb...)
 
 	if err != nil {
 		return nil, err
@@ -33,19 +33,19 @@ func (svc *MovieService) GetTmdbDiscoverMovies(syncWithTmdb bool) ([]*models.Mov
 	return movies, nil
 }
 
-func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncWithTmdb bool) ([]*models.Movie, error) {
+func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncWithTmdb ...bool) ([]*models.Movie, error) {
 	movieChan := make(chan *models.Movie, len(movie.Results))
 
 	for i := range movie.Results {
 		go func(m tmdb.DiscoverMovieResult) {
-			dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb)
+			dbMovie, err := svc.GetOrCreateMovieByTmdbID(m.ID, syncWithTmdb...)
 			if err != nil {
 				svc.log.Sugar().Errorw(err.Error(), "movie", dbMovie)
 				movieChan <- nil
 				return
 			}
 
-			if !syncWithTmdb {
+			if len(syncWithTmdb) > 0 && !syncWithTmdb[0] {
 				dbMovie.Title = m.Title
 				dbMovie.Overview = m.Overview
 				dbMovie.BackdropPath = m.BackdropPath
@@ -69,7 +69,7 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 		}
 	}
 
-	if !syncWithTmdb {
+	if len(syncWithTmdb) > 0 && !syncWithTmdb[0] {
 		err := svc.db.Save(movies).Error
 		if err != nil {
 			return nil, err

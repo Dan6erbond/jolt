@@ -14,14 +14,14 @@ type TvService struct {
 	tmdbClient *tmdb.Client
 }
 
-func (svc *TvService) GetTmdbDiscoverTv(syncWithTmdb bool) ([]*models.Tv, error) {
+func (svc *TvService) GetTmdbDiscoverTv(syncWithTmdb ...bool) ([]*models.Tv, error) {
 	tv, err := svc.tmdbClient.DiscoverTV()
 
 	if err != nil {
 		return nil, err
 	}
 
-	tvs, err := svc.SaveTmdbDiscoverTv(tv, syncWithTmdb)
+	tvs, err := svc.SaveTmdbDiscoverTv(tv, syncWithTmdb...)
 
 	if err != nil {
 		return nil, err
@@ -30,11 +30,11 @@ func (svc *TvService) GetTmdbDiscoverTv(syncWithTmdb bool) ([]*models.Tv, error)
 	return tvs, nil
 }
 
-func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV, syncWithTmdb bool) ([]*models.Tv, error) {
+func (svc *TvService) SaveTmdbDiscoverTv(tv *tmdb.DiscoverTV, syncWithTmdb ...bool) ([]*models.Tv, error) {
 	tvs := make([]*models.Tv, len(tv.Results))
 
 	for i, tv := range tv.Results {
-		dbTv, err := svc.GetOrCreateTvByTmdbID(tv.ID, syncWithTmdb)
+		dbTv, err := svc.GetOrCreateTvByTmdbID(tv.ID, syncWithTmdb...)
 		if err != nil {
 			return nil, err
 		}
