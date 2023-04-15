@@ -162,6 +162,7 @@ func (svc *TvService) SyncTvSeasons(tv *models.Tv, tmdbTvs ...*tmdb.Tv) error {
 		err    error
 		tmdbTv *tmdb.Tv
 	)
+	//nolint:wsl
 	if len(tmdbTvs) > 0 {
 		tmdbTv = tmdbTvs[0]
 	} else {
@@ -182,6 +183,7 @@ func (svc *TvService) SyncTvSeasons(tv *models.Tv, tmdbTvs ...*tmdb.Tv) error {
 OUTER:
 	for _, season := range tmdbTv.Seasons {
 		for i, s := range seasons {
+			//nolint:nestif
 			if s.TmdbID == uint(season.ID) {
 				if i == len(seasons)-1 || !s.SyncedWithTmdb {
 					err = svc.SyncTvSeasonEpisodes(s)
@@ -216,12 +218,15 @@ OUTER:
 			PosterPath: season.PosterPath,
 			Number:     uint(season.SeasonNumber),
 		}
-		svc.db.Model(tv).Association("Seasons").Append(&s)
+		err = svc.db.Model(tv).Association("Seasons").Append(&s)
+
+		if err != nil {
+			return err
+		}
 
 		err = svc.SyncTvSeasonEpisodes(&s)
 
 		if err != nil {
-			fmt.Println("services/tv.go:222")
 			return err
 		}
 
@@ -255,6 +260,7 @@ func (svc *TvService) SyncTvSeasonEpisodes(season *models.Season) error {
 		tv  *models.Tv
 		err error
 	)
+	//nolint:wsl
 	if (season.CreatedAt == time.Time{}) {
 		tv = &season.Tv
 	} else {

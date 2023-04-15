@@ -208,6 +208,7 @@ func (r *tvResolver) WatchedOn(ctx context.Context, obj *models.Tv) (*time.Time,
 	}
 
 	if len(watched) == 0 {
+		//nolint:nilnil
 		return nil, nil
 	}
 

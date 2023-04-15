@@ -42,6 +42,7 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 			if err != nil {
 				svc.log.Sugar().Errorw(err.Error(), "movie", dbMovie)
 				movieChan <- nil
+
 				return
 			}
 
@@ -50,10 +51,12 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 				dbMovie.Overview = m.Overview
 				dbMovie.BackdropPath = m.BackdropPath
 				dbMovie.PosterPath = m.PosterPath
+
 				err = svc.db.Save(dbMovie).Error
 				if err != nil {
 					svc.log.Error(err.Error())
 					movieChan <- nil
+
 					return
 				}
 			}
@@ -63,6 +66,7 @@ func (svc *MovieService) SaveTmdbDiscoverMovies(movie *tmdb.DiscoverMovie, syncW
 	}
 
 	var movies []*models.Movie
+	//nolint:wsl
 	for i := 0; i < len(movie.Results); i++ {
 		if m := <-movieChan; m != nil {
 			movies = append(movies, m)

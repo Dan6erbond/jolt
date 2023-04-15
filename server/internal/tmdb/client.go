@@ -167,8 +167,8 @@ func (tmdbClient *Client) Tv(id string) (*Tv, error) {
 	return &result, nil
 }
 
-func (tmdbClient *Client) TvSeason(tvId string, seasonNumber uint) (*TvSeason, error) {
-	u, _, err := tmdbClient.GetURL("/tv/" + tvId + "/season/" + fmt.Sprint(seasonNumber))
+func (tmdbClient *Client) TvSeason(tvID string, seasonNumber uint) (*TvSeason, error) {
+	u, _, err := tmdbClient.GetURL("/tv/" + tvID + "/season/" + fmt.Sprint(seasonNumber))
 	if err != nil {
 		return nil, err
 	}

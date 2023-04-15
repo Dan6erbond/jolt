@@ -87,6 +87,7 @@ func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*mod
 // JellyfinURL is the resolver for the jellyfinUrl field.
 func (r *movieResolver) JellyfinURL(ctx context.Context, obj *models.Movie) (*string, error) {
 	if obj.JellyfinID == "" {
+		//nolint:nilnil
 		return nil, nil
 	}
 
@@ -97,9 +98,9 @@ func (r *movieResolver) JellyfinURL(ctx context.Context, obj *models.Movie) (*st
 	}
 
 	// TODO: make this cleaner
-	jellyfinUrl := u.String() + fmt.Sprintf("/web/index.html#!/details?id=%s&serverId=%s", obj.JellyfinID, obj.JellyfinServerID)
+	jellyfinURL := u.String() + fmt.Sprintf("/web/index.html#!/details?id=%s&serverId=%s", obj.JellyfinID, obj.JellyfinServerID)
 
-	return &jellyfinUrl, nil
+	return &jellyfinURL, nil
 }
 
 // Genres is the resolver for the genres field.
@@ -140,6 +141,7 @@ func (r *movieResolver) WatchedOn(ctx context.Context, obj *models.Movie) (*time
 	}
 
 	if len(watched) == 0 {
+		//nolint:nilnil
 		return nil, nil
 	}
 

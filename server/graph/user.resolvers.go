@@ -256,15 +256,15 @@ func (r *mutationResolver) ToggleFollow(ctx context.Context, userID string) (*mo
 		}
 
 		return &followee, nil
-	} else {
-		err = r.db.Delete(followers[0]).Error
-
-		if err != nil {
-			return nil, err
-		}
-
-		return &followee, nil
 	}
+
+	err = r.db.Delete(followers[0]).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &followee, nil
 }
 
 // Me is the resolver for the me field.
@@ -281,6 +281,7 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id *string, name *string) (*models.User, error) {
 	var user models.User
+	//nolint:gocritic
 	if id != nil {
 		err := r.db.First(&user, "id = ?", id).Error
 
@@ -296,6 +297,7 @@ func (r *queryResolver) User(ctx context.Context, id *string, name *string) (*mo
 	} else {
 		return nil, errors.New("id or name must be given")
 	}
+
 	return &user, nil
 }
 
@@ -318,6 +320,7 @@ func (r *userResolver) ProfileImageURL(ctx context.Context, obj *models.User) (s
 		u, err := r.jellyfinClient.GetURL(path.Join("Users/", obj.JellyfinID, "/Images/Primary"))
 		return u.String(), err
 	}
+
 	return "", nil
 }
 
@@ -332,6 +335,7 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 	}
 
 	medias := make([]model.Media, len(watchlist))
+	//nolint:wsl
 	for i, item := range watchlist {
 		switch item.MediaType {
 		case "movies":
@@ -366,6 +370,7 @@ func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.M
 	}
 
 	var medias []model.Media
+	//nolint:wsl
 	for _, w := range watched {
 		switch w.MediaType {
 		case "movies":
@@ -428,9 +433,9 @@ func (r *userResolver) UserFollows(ctx context.Context, obj *models.User) (bool,
 
 	if followersCount == 0 {
 		return false, nil
-	} else {
-		return true, nil
 	}
+
+	return true, nil
 }
 
 // Followers is the resolver for the followers field.

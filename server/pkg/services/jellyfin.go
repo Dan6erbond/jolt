@@ -11,11 +11,13 @@ import (
 
 	"github.com/dan6erbond/jolt-server/internal/jellyfin"
 	"github.com/dan6erbond/jolt-server/pkg/models"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 type JellyfinService struct {
 	db             *gorm.DB
+	log            *zap.Logger
 	jellyfinClient *jellyfin.Client
 	movieService   *MovieService
 	tvService      *TvService
@@ -33,7 +35,13 @@ func (svc *JellyfinService) SyncUsersLibrary() error {
 
 	for _, user := range users {
 		wg.Add(1)
-		go svc.SyncUserLibrary(&wg, user)
+		//nolint:wsl
+		go func(user *models.User) {
+			err = svc.SyncUserLibrary(&wg, user)
+			if err != nil {
+				svc.log.Error(err.Error())
+			}
+		}(user)
 	}
 
 	wg.Wait()
@@ -59,26 +67,29 @@ func (svc *JellyfinService) SyncUserLibrary(wg *sync.WaitGroup, user *models.Use
 		if err != nil {
 			panic(err)
 		}
+
 		return err
 	} else if err != nil {
 		panic(err)
 	}
 
 	for _, v := range res.Items {
-		var externalUrl *url.URL
+		var externalURL *url.URL
+		//nolint:wsl
 		for _, u := range v.ExternalUrls {
+			//nolint:nestif
 			if u.Name == "TheMovieDb" {
 				switch v.Type {
 				case "Movie":
 					if strings.Contains(u.URL, "/movie/") {
-						externalUrl, err = url.Parse(u.URL)
+						externalURL, err = url.Parse(u.URL)
 						if err != nil {
 							panic(err)
 						}
 					}
 				case "Series":
 					if strings.Contains(u.URL, "/tv/") {
-						externalUrl, err = url.Parse(u.URL)
+						externalURL, err = url.Parse(u.URL)
 						if err != nil {
 							panic(err)
 						}
@@ -87,8 +98,9 @@ func (svc *JellyfinService) SyncUserLibrary(wg *sync.WaitGroup, user *models.Use
 			}
 		}
 
-		_, tmdbId := path.Split(externalUrl.String())
-		_tmdbId, err := strconv.ParseInt(tmdbId, 10, 64)
+		_, tmdbID := path.Split(externalURL.String())
+		//nolint:revive
+		_tmdbId, err := strconv.ParseInt(tmdbID, 10, 64)
 
 		if err != nil {
 			panic(err)
@@ -184,6 +196,7 @@ func (svc *JellyfinService) SyncUserShow(user *models.User, series jellyfin.User
 
 SEASONS:
 	for _, season := range seasons.Items {
+		//nolint:nestif
 		for _, dbSeason := range dbSeasons {
 			if dbSeason.Number == uint(season.IndexNumber) {
 				dbSeason.JellyfinID = season.ID
@@ -270,6 +283,6 @@ SEASONS:
 	return nil
 }
 
-func NewJellyfinService(db *gorm.DB, jc *jellyfin.Client, msvc *MovieService, tvsvc *TvService) *JellyfinService {
-	return &JellyfinService{db, jc, msvc, tvsvc}
+func NewJellyfinService(db *gorm.DB, log *zap.Logger, jc *jellyfin.Client, msvc *MovieService, tvsvc *TvService) *JellyfinService {
+	return &JellyfinService{db, log, jc, msvc, tvsvc}
 }

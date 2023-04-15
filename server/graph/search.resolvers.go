@@ -47,6 +47,7 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 				if err != nil {
 					r.log.Error(err.Error())
 					mediaChan <- nil
+
 					return
 				}
 
@@ -57,6 +58,7 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 				if err != nil {
 					r.log.Error(err.Error())
 					mediaChan <- nil
+
 					return
 				}
 
@@ -68,6 +70,7 @@ func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult,
 	}
 
 	var results []model.Media
+	//nolint:wsl
 	for i := 0; i < len(search.Results); i++ {
 		if media := <-mediaChan; media != nil {
 			results = append(results, media)
