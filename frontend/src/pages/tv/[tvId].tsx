@@ -1,18 +1,14 @@
 import { useApolloClient, useMutation, useQuery } from "@apollo/client";
 import {
   ActionIcon,
-  Avatar,
   Box,
   Button,
   Card,
-  Divider,
   Flex,
   Group,
   Image,
   Modal,
   Rating,
-  Select,
-  Skeleton,
   Space,
   Stack,
   Tabs,
@@ -23,7 +19,6 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import {
-  IconChevronDown,
   IconClockHour4,
   IconEyeCheck,
   IconMessage2,
@@ -33,8 +28,9 @@ import {
 } from "@tabler/icons";
 import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router-dom";
-import Poster from "../../components/poster";
-import { UserSelectItem } from "../../components/userSelectItem";
+import Poster from "../../components/media/poster";
+import ReviewCard from "../../components/media/reviewCard";
+import UserSelect from "../../components/user/userSelect";
 import { graphql } from "../../gql";
 
 const Tv = () => {
@@ -73,8 +69,10 @@ const Tv = () => {
           reviews {
             id
             review
+            rating
             createdBy {
               id
+              profileImageUrl
               name
             }
           }
@@ -96,6 +94,7 @@ const Tv = () => {
       query Users {
         users {
           id
+          profileImageUrl
           name
         }
       }
@@ -117,17 +116,18 @@ const Tv = () => {
   const [showRecommendationModal, setShowRecommendationModal] =
     useState<boolean>(false);
 
-  const [reviewMovie, { loading: submittingReview }] = useMutation(
+  const [reviewTv, { loading: submittingReview }] = useMutation(
     graphql(`
-      mutation ReviewMovie($tmdbId: ID!, $review: String!) {
-        reviewMovie(tmdbId: $tmdbId, review: $review) {
+      mutation ReviewTv($tmdbId: ID!, $review: String!) {
+        reviewTv(tmdbId: $tmdbId, review: $review) {
           media {
-            ... on Movie {
+            ... on Tv {
               id
               reviews {
                 review
                 createdBy {
                   id
+                  profileImageUrl
                   name
                 }
               }
@@ -140,7 +140,7 @@ const Tv = () => {
 
   const submitReview = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    reviewMovie({
+    reviewTv({
       variables: { tmdbId: tvId!, review: review },
     });
   };
@@ -149,11 +149,11 @@ const Tv = () => {
     e.preventDefault();
     client.mutate({
       mutation: graphql(`
-        mutation RecommendMovie($tmdbId: ID!, $userId: ID!, $message: String!) {
+        mutation RecommendTv($tmdbId: ID!, $userId: ID!, $message: String!) {
           createRecommendation(
             input: {
               tmdbId: $tmdbId
-              mediaType: MOVIE
+              mediaType: TV
               recommendationForUserId: $userId
               message: $message
             }
@@ -228,7 +228,7 @@ const Tv = () => {
       <Modal
         opened={showRecommendationModal}
         onClose={() => setShowRecommendationModal((show) => !show)}
-        title="Recommend movie"
+        title="Recommend show"
         centered
         styles={(theme) => ({
           title: { color: "white" },
@@ -271,32 +271,14 @@ const Tv = () => {
           </Flex>
           <Form onSubmit={submitRecommendation}>
             <Stack>
-              <Select
-                data={
-                  usersData?.users
-                    .filter((user) => user.id !== myIdData?.me.id)
-                    .map((user) => ({
-                      ...user,
-                      value: user.id,
-                      label: user.name,
-                    })) || []
+              <UserSelect
+                users={
+                  usersData?.users.filter(
+                    (user) => user.id !== myIdData?.me.id,
+                  ) || []
                 }
-                searchable
-                styles={{
-                  input: {
-                    border: `1px solid ${theme.colors.dark[1]}`,
-                    color: "white",
-                    "::placeholder": { color: theme.colors.gray[4] },
-                  },
-                  dropdown: {
-                    color: theme.colors.gray[4],
-                  },
-                }}
                 value={recommendUserId}
                 onChange={setRecommendUserId}
-                itemComponent={UserSelectItem}
-                rightSection={<IconChevronDown size={14} />}
-                rightSectionWidth={30}
               />
               <Textarea
                 label="Tell them your thoughts"
@@ -325,18 +307,29 @@ const Tv = () => {
           </Form>
         </Stack>
       </Modal>
-      <Box style={{ position: "relative", overflow: "hidden" }} mih="250px">
+      <Box style={{ position: "relative", zIndex: 0 }} mih="250px">
         <Image
           src={
             data?.tv &&
             `https://image.tmdb.org/t/p/original${data?.tv.backdropPath}`
           }
           styles={{
+            root: {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -10,
+            },
+            figure: { height: "100%" },
+            imageWrapper: { height: "100%" },
             image: {
-              maxHeight: "min(50vh, 600px)",
               objectPosition: "center top",
             },
           }}
+          height="100%"
+          fit="cover"
         />
         <Box
           style={{
@@ -347,30 +340,14 @@ const Tv = () => {
             left: 0,
             right: 0,
             bottom: 0,
+            zIndex: -10,
           }}
         />
         {data?.tv && (
-          <Box
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          >
+          <Box>
             <Stack p="md" spacing="sm">
-              <Flex align="end" gap="md">
-                <Image
-                  src={`https://image.tmdb.org/t/p/original${data?.tv.posterPath}`}
-                  height={200}
-                  width={2000 * (200 / 3000)}
-                  alt={data?.tv.name}
-                  withPlaceholder
-                  placeholder={
-                    <Skeleton height={300} width={2000 * (300 / 3000)} />
-                  }
-                  styles={{ image: { borderRadius: "10px" } }}
-                />
+              <Flex align="end" gap="md" wrap="wrap">
+                <Poster model={data?.tv} size="sm" />
                 <Stack spacing="xs">
                   <Title color="white">
                     {data?.tv.name}{" "}
@@ -424,17 +401,12 @@ const Tv = () => {
             setRating(value);
             client.mutate({
               mutation: graphql(`
-                mutation RateMovie($tmdbId: ID!, $rating: Float!) {
-                  rateMovie(tmdbId: $tmdbId, rating: $rating) {
+                mutation RateTv($tmdbId: ID!, $rating: Float!) {
+                  rateTv(tmdbId: $tmdbId, rating: $rating) {
                     media {
-                      ... on Movie {
+                      ... on Tv {
                         id
                         rating
-                        userReview {
-                          id
-                          rating
-                          review
-                        }
                       }
                     }
                   }
@@ -453,24 +425,16 @@ const Tv = () => {
           rightIcon={<IconUserPlus />}
           onClick={() => setShowRecommendationModal(true)}
         >
-          Recommend this movie
+          Recommend this show
         </Button>
       </Group>
       <Space h="xl" />
       <Tabs
         defaultValue="reviews"
         styles={(theme) => ({
-          tabLabel: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
-          },
-          tabIcon: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
+          tab: {
+            color: theme.colors.gray[4],
+            "&[data-active]": { color: "white" },
           },
         })}
       >
@@ -530,27 +494,7 @@ const Tv = () => {
               {data?.tv.reviews
                 .filter((review) => review.createdBy.id !== myIdData?.me.id)
                 .map((review) => (
-                  <Box key={review.id}>
-                    <Group>
-                      <Stack sx={{ flex: 1 }}>
-                        <Text color="white" sx={{ wordWrap: "normal" }}>
-                          {review.review}
-                        </Text>
-                        <Group>
-                          <Rating value={2} readOnly />
-                          <Avatar radius="xl">
-                            {review.createdBy.name
-                              .split(" ")
-                              .map((name) => name[0].toUpperCase())
-                              .join("")}
-                          </Avatar>
-                          <Text color="white">{review.createdBy.name}</Text>
-                        </Group>
-                      </Stack>
-                    </Group>
-                    <Space h="sm" />
-                    <Divider size="sm" color={theme.colors.dark[3]} />
-                  </Box>
+                  <ReviewCard key={review.id} review={review} />
                 ))}
             </Stack>
           </Stack>

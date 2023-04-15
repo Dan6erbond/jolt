@@ -5,7 +5,9 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"path"
 	"strconv"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
@@ -29,7 +31,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -52,7 +54,7 @@ func (r *mutationResolver) AddToWatchlist(ctx context.Context, input model.AddTo
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -95,7 +97,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -121,7 +123,7 @@ func (r *mutationResolver) RemoveFromWatchlist(ctx context.Context, input model.
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -167,7 +169,7 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 
 	switch input.MediaType {
 	case model.MediaTypeMovie:
-		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+		movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -193,7 +195,7 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 
 		return movie, nil
 	case model.MediaTypeTv:
-		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+		tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 		if err != nil {
 			return nil, err
@@ -223,6 +225,48 @@ func (r *mutationResolver) ToggleWatched(ctx context.Context, input model.Toggle
 	}
 }
 
+// ToggleFollow is the resolver for the toggleFollow field.
+func (r *mutationResolver) ToggleFollow(ctx context.Context, userID string) (*models.User, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var followee models.User
+	err = r.db.Find(&followee, "id = ?", userID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	var followers []*models.Follower
+
+	err = r.db.Model(&user).Where("user_id = ?", followee.ID).Association("Following").Find(&followers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(followers) == 0 {
+		err = r.db.Model(&user).Association("Following").Append(&models.Follower{UserID: followee.ID})
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &followee, nil
+	}
+
+	err = r.db.Delete(followers[0]).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &followee, nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 	user, err := r.authService.GetUser(ctx)
@@ -232,6 +276,29 @@ func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+// User is the resolver for the user field.
+func (r *queryResolver) User(ctx context.Context, id *string, name *string) (*models.User, error) {
+	var user models.User
+	//nolint:gocritic
+	if id != nil {
+		err := r.db.First(&user, "id = ?", id).Error
+
+		if err != nil {
+			return nil, err
+		}
+	} else if name != nil {
+		err := r.db.Where("name = ?", name).First(&user).Error
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, errors.New("id or name must be given")
+	}
+
+	return &user, nil
 }
 
 // Users is the resolver for the users field.
@@ -247,9 +314,18 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 	return users, nil
 }
 
+// ProfileImageURL is the resolver for the profileImageUrl field.
+func (r *userResolver) ProfileImageURL(ctx context.Context, obj *models.User) (string, error) {
+	if obj.JellyfinID != "" {
+		u, err := r.jellyfinClient.GetURL(path.Join("Users/", obj.JellyfinID, "/Images/Primary"))
+		return u.String(), err
+	}
+
+	return "", nil
+}
+
 // Watchlist is the resolver for the watchlist field.
 func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model.Media, error) {
-	var medias []model.Media
 	//nolint:wsl
 	var watchlist []models.Watchlist
 
@@ -258,21 +334,56 @@ func (r *userResolver) Watchlist(ctx context.Context, obj *models.User) ([]model
 		return nil, err
 	}
 
-	for _, item := range watchlist {
+	medias := make([]model.Media, len(watchlist))
+	//nolint:wsl
+	for i, item := range watchlist {
 		switch item.MediaType {
 		case "movies":
-			var movie models.Movie
+			movie, err := r.movieService.GetOrCreateMovieByID(item.MediaID)
 
-			err = r.db.First(&movie, item.MediaID).Error
+			if err != nil {
+				return nil, err
+			}
+
+			medias[i] = movie
+		case "tvs":
+			tv, err := r.tvService.GetOrCreateTvByID(item.MediaID)
+
+			if err != nil {
+				return nil, err
+			}
+
+			medias[i] = tv
+		}
+	}
+
+	return medias, nil
+}
+
+// Watched is the resolver for the watched field.
+func (r *userResolver) Watched(ctx context.Context, obj *models.User) ([]model.Media, error) {
+	var watched []models.Watched
+	err := r.db.Model(obj).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var medias []model.Media
+	//nolint:wsl
+	for _, w := range watched {
+		switch w.MediaType {
+		case "movies":
+			movie, err := r.movieService.GetOrCreateMovieByID(w.MediaID)
+
 			if err != nil {
 				return nil, err
 			}
 
 			medias = append(medias, movie)
 		case "tvs":
-			var tv models.Tv
+			tv, err := r.tvService.GetOrCreateTvByID(w.MediaID)
 
-			err = r.db.First(&tv, item.MediaID).Error
 			if err != nil {
 				return nil, err
 			}
@@ -308,6 +419,55 @@ func (r *userResolver) RecommendationsCreated(ctx context.Context, obj *models.U
 	}
 
 	return recommendations, nil
+}
+
+// UserFollows is the resolver for the userFollows field.
+func (r *userResolver) UserFollows(ctx context.Context, obj *models.User) (bool, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return false, err
+	}
+
+	followersCount := r.db.Model(&obj).Where("follower_id = ?", user.ID).Association("Followers").Count()
+
+	if followersCount == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// Followers is the resolver for the followers field.
+func (r *userResolver) Followers(ctx context.Context, obj *models.User) ([]*models.User, error) {
+	var followers []*models.Follower
+
+	err := r.db.Model(&obj).Preload("Follower").Association("Followers").Find(&followers)
+
+	if err != nil {
+		return nil, err
+	}
+
+	followerUsers := make([]*models.User, len(followers))
+
+	for i, follower := range followers {
+		followerUsers[i] = &follower.Follower
+	}
+
+	return followerUsers, nil
+}
+
+// Reviews is the resolver for the reviews field.
+func (r *userResolver) Reviews(ctx context.Context, obj *models.User) ([]*models.Review, error) {
+	var reviews []*models.Review
+
+	err := r.db.Model(&obj).Association("Reviews").Find(&reviews)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return reviews, nil
 }
 
 // User returns generated.UserResolver implementation.

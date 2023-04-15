@@ -1,7 +1,6 @@
 import { useApolloClient, useMutation, useQuery } from "@apollo/client";
 import {
   ActionIcon,
-  Avatar,
   Badge,
   Box,
   Button,
@@ -13,7 +12,6 @@ import {
   Modal,
   Rating,
   Select,
-  Skeleton,
   Space,
   Stack,
   Tabs,
@@ -34,9 +32,11 @@ import {
 } from "@tabler/icons";
 import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router-dom";
-import Poster from "../../components/poster";
-import { UserSelectItem } from "../../components/userSelectItem";
+import Poster from "../../components/media/poster";
+import UserAvatar from "../../components/user/userAvatar";
+import { UserSelectItem } from "../../components/user/userSelectItem";
 import { graphql } from "../../gql";
+import ReviewCard from "../../components/media/reviewCard";
 
 const Movie = () => {
   const { movieId } = useParams();
@@ -75,8 +75,10 @@ const Movie = () => {
           reviews {
             id
             review
+            rating
             createdBy {
               id
+              profileImageUrl
               name
             }
           }
@@ -98,6 +100,7 @@ const Movie = () => {
       query Users {
         users {
           id
+          profileImageUrl
           name
         }
       }
@@ -130,6 +133,7 @@ const Movie = () => {
                 review
                 createdBy {
                   id
+                  profileImageUrl
                   name
                 }
               }
@@ -338,18 +342,29 @@ const Movie = () => {
           </Form>
         </Stack>
       </Modal>
-      <Box style={{ position: "relative", overflow: "hidden" }} mih="250px">
+      <Box style={{ position: "relative", zIndex: 0 }} mih="250px">
         <Image
           src={
             data?.movie &&
             `https://image.tmdb.org/t/p/original${data?.movie.backdropPath}`
           }
           styles={{
+            root: {
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: -10,
+            },
+            figure: { height: "100%" },
+            imageWrapper: { height: "100%" },
             image: {
-              maxHeight: "min(50vh, 600px)",
               objectPosition: "center top",
             },
           }}
+          height="100%"
+          fit="cover"
         />
         <Box
           style={{
@@ -360,30 +375,14 @@ const Movie = () => {
             left: 0,
             right: 0,
             bottom: 0,
+            zIndex: -10,
           }}
         />
         {data?.movie && (
-          <Box
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-            }}
-          >
+          <Box>
             <Stack p="md" spacing="sm">
-              <Flex align="end" gap="md">
-                <Image
-                  src={`https://image.tmdb.org/t/p/original${data?.movie.posterPath}`}
-                  height={200}
-                  width={2000 * (200 / 3000)}
-                  alt={data?.movie.title}
-                  withPlaceholder
-                  placeholder={
-                    <Skeleton height={300} width={2000 * (300 / 3000)} />
-                  }
-                  styles={{ image: { borderRadius: "10px" } }}
-                />
+              <Flex align="end" gap="md" wrap="wrap">
+                <Poster model={data?.movie} size="sm" />
                 <Stack spacing="xs">
                   <Title color="white">
                     {data?.movie.title}{" "}
@@ -456,11 +455,6 @@ const Movie = () => {
                       ... on Movie {
                         id
                         rating
-                        userReview {
-                          id
-                          rating
-                          review
-                        }
                       }
                     }
                   }
@@ -486,17 +480,9 @@ const Movie = () => {
       <Tabs
         defaultValue="reviews"
         styles={(theme) => ({
-          tabLabel: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
-          },
-          tabIcon: {
-            ":not": {
-              "[data-active]": { color: theme.colors.gray[4] },
-            },
-            "[data-active]": { color: "white" },
+          tab: {
+            color: theme.colors.gray[4],
+            "&[data-active]": { color: "white" },
           },
         })}
       >
@@ -556,27 +542,7 @@ const Movie = () => {
               {data?.movie.reviews
                 .filter((review) => review.createdBy.id !== myIdData?.me.id)
                 .map((review) => (
-                  <Box key={review.id}>
-                    <Group>
-                      <Stack sx={{ flex: 1 }}>
-                        <Text color="white" sx={{ wordWrap: "normal" }}>
-                          {review.review}
-                        </Text>
-                        <Group>
-                          <Rating value={2} readOnly />
-                          <Avatar radius="xl">
-                            {review.createdBy.name
-                              .split(" ")
-                              .map((name) => name[0].toUpperCase())
-                              .join("")}
-                          </Avatar>
-                          <Text color="white">{review.createdBy.name}</Text>
-                        </Group>
-                      </Stack>
-                    </Group>
-                    <Space h="sm" />
-                    <Divider size="sm" color={theme.colors.dark[3]} />
-                  </Box>
+                  <ReviewCard key={review.id} review={review} />
                 ))}
             </Stack>
           </Stack>

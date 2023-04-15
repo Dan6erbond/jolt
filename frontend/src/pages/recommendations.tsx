@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { Box, Group, Space, Stack, Title } from "@mantine/core";
 import { TbUserPlus } from "react-icons/tb";
-import RecommendationCard from "../components/recommendationCard";
+import RecommendationCard from "../components/feed/recommendationCard";
 import { graphql } from "../gql";
 
 const Recommendations = () => {

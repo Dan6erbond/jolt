@@ -34,16 +34,15 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 
 	movieReviews := make([]movieReview, len(reviews))
 	//nolint:wsl
-	for _, review := range reviews {
-		var movie models.Movie
-		err = r.db.Find(&movie, review.MediaID).Error
+	for i, review := range reviews {
+		movie, err := r.movieService.GetOrCreateMovieByID(review.MediaID)
 
 		if err != nil {
 			return nil, err
 		}
 
 		//nolint:gosec
-		movieReviews = append(movieReviews, movieReview{&review, &movie})
+		movieReviews[i] = movieReview{&review, movie}
 	}
 
 	recommendations := make(map[int]movieRecommendation)
@@ -56,7 +55,7 @@ func (r *queryResolver) MovieSuggestions(ctx context.Context) ([]*models.Movie, 
 		}
 
 		for _, movie := range movieRecommendations.Results {
-			dbMovie, err := r.movieService.GetOrCreateMovieByTmdbID(movie.ID, true)
+			dbMovie, err := r.movieService.GetOrCreateMovieByTmdbID(movie.ID)
 
 			if err != nil {
 				return nil, err

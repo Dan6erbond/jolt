@@ -6,6 +6,7 @@ import (
 	"github.com/dan6erbond/jolt-server/internal/tmdb"
 	"github.com/dan6erbond/jolt-server/pkg/auth"
 	"github.com/dan6erbond/jolt-server/pkg/services"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -21,9 +22,11 @@ type Resolver struct {
 	movieService   *services.MovieService
 	tvService      *services.TvService
 	reviewService  *services.ReviewService
+	log            *zap.Logger
 }
 
 func NewResolver(
+	log *zap.Logger,
 	db *gorm.DB,
 	as *auth.Service,
 	jc *jellyfin.Client,
@@ -40,5 +43,6 @@ func NewResolver(
 		movieService,
 		tvService,
 		reviewService,
+		log,
 	}
 }

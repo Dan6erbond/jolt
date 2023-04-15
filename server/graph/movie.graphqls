@@ -4,15 +4,17 @@ type Movie {
   rating: Float!
   reviews: [Review!]!
   userReview: Review @loggedIn
-  availableOnJellyfin: Boolean!
+  jellyfinUrl: String
   title: String!
   tagline: String!
+  overview: String!
   posterPath: String!
   backdropPath: String!
   certification: String
   genres: [String!]!
   releaseDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 

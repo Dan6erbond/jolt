@@ -12,6 +12,9 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - main
+      - develop
 
 env:
   REGISTRY: ghcr.io

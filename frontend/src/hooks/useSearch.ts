@@ -5,12 +5,13 @@ export const useSearch = () =>
   useLazyQuery(
     graphql(`
       query Search($query: String!, $page: Int) {
-        search(query: $query, page: $page) {
+        search(query: $query) {
           profiles {
             id
+            profileImageUrl
             name
           }
-          tmdb {
+          tmdb(page: $page) {
             page
             totalPages
             totalResults

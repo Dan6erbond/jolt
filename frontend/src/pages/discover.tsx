@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import Autoplay from "embla-carousel-autoplay";
 import { useRef } from "react";
-import Poster from "../components/poster";
+import Poster from "../components/media/poster";
 import { graphql } from "../gql";
 
 const Discover = () => {

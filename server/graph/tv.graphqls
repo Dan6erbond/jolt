@@ -7,11 +7,13 @@ type Tv {
   availableOnJellyfin: Boolean!
   name: String!
   tagline: String!
+  overview: String!
   posterPath: String!
   backdropPath: String!
   genres: [String!]!
   firstAirDate: Time!
   watched: Boolean! @loggedIn
+  watchedOn: Time @loggedIn
   addedToWatchlist: Boolean! @loggedIn
 }
 

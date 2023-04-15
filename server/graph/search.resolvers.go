@@ -7,15 +7,22 @@ import (
 	"context"
 	"strings"
 
+	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/graph/model"
 	"github.com/dan6erbond/jolt-server/internal/tmdb"
+	"github.com/dan6erbond/jolt-server/pkg/data"
 	"github.com/dan6erbond/jolt-server/pkg/models"
 )
 
 // Search is the resolver for the search field.
-func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*model.SearchResult, error) {
-	var results []model.Media
+func (r *queryResolver) Search(ctx context.Context, query string) (*data.SearchResult, error) {
+	return &data.SearchResult{
+		Query: query,
+	}, nil
+}
 
+// Tmdb is the resolver for the tmdb field.
+func (r *searchResultResolver) Tmdb(ctx context.Context, obj *data.SearchResult, page *int) (*model.TMDBSearchResult, error) {
 	var _page int
 	if page == nil {
 		_page = 1
@@ -23,44 +30,71 @@ func (r *queryResolver) Search(ctx context.Context, query string, page *int) (*m
 		_page = *page
 	}
 
-	search, err := r.tmdbService.SearchMulti(query, _page)
+	search, err := r.tmdbService.SearchMulti(obj.Query, _page)
 
 	if err != nil {
 		return nil, err
 	}
 
-	for _, media := range search.Results {
-		switch media.MediaType {
-		case tmdb.MediaTypeMovie:
-			movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID, true)
+	mediaChan := make(chan model.Media, len(search.Results))
 
-			if err != nil {
-				return nil, err
+	for i := range search.Results {
+		go func(media tmdb.SearchMultiResult) {
+			switch media.MediaType {
+			case tmdb.MediaTypeMovie:
+				movie, err := r.movieService.GetOrCreateMovieByTmdbID(media.ID)
+
+				if err != nil {
+					r.log.Error(err.Error())
+					mediaChan <- nil
+
+					return
+				}
+
+				mediaChan <- movie
+			case tmdb.MediaTypeTv:
+				tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID)
+
+				if err != nil {
+					r.log.Error(err.Error())
+					mediaChan <- nil
+
+					return
+				}
+
+				mediaChan <- tv
+			default:
+				mediaChan <- nil
 			}
+		}(search.Results[i])
+	}
 
-			results = append(results, movie)
-		case tmdb.MediaTypeTv:
-			tv, err := r.tvService.GetOrCreateTvByTmdbID(media.ID, true)
-
-			if err != nil {
-				return nil, err
-			}
-
-			results = append(results, tv)
+	var results []model.Media
+	//nolint:wsl
+	for i := 0; i < len(search.Results); i++ {
+		if media := <-mediaChan; media != nil {
+			results = append(results, media)
 		}
 	}
 
-	var users []*models.User
-
-	r.db.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(query)+"%").Find(&users)
-
-	return &model.SearchResult{
-		Tmdb: &model.TMDBSearchResult{
-			Results:      results,
-			Page:         search.Page,
-			TotalPages:   search.TotalPages,
-			TotalResults: search.TotalResults,
-		},
-		Profiles: users,
+	return &model.TMDBSearchResult{
+		Results:      results,
+		Page:         search.Page,
+		TotalPages:   search.TotalPages,
+		TotalResults: search.TotalResults,
 	}, nil
 }
+
+// Profiles is the resolver for the profiles field.
+func (r *searchResultResolver) Profiles(ctx context.Context, obj *data.SearchResult) ([]*models.User, error) {
+	var users []*models.User
+
+	r.db.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(obj.Query)+"%").Find(&users)
+
+	return users, nil
+}
+
+// SearchResult returns generated.SearchResultResolver implementation.
+func (r *Resolver) SearchResult() generated.SearchResultResolver { return &searchResultResolver{r} }
+
+type searchResultResolver struct{ *Resolver }

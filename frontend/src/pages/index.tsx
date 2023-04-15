@@ -16,8 +16,9 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Link } from "react-router-dom";
-import RecommendationCard from "../components/recommendationCard";
-import ReviewCard from "../components/reviewCard";
+import RecommendationCard from "../components/feed/recommendationCard";
+import ReviewCard from "../components/profile/reviewCard";
+import UserAvatar from "../components/user/userAvatar";
 import { graphql } from "../gql";
 
 const LegacyFeed = () => {
@@ -128,6 +129,7 @@ export const Home = () => {
             }
             recommendedBy {
               id
+              profileImageUrl
               name
             }
             message
@@ -146,9 +148,12 @@ export const Home = () => {
           <Box key={item.id}>
             <Stack spacing="xs">
               <Group spacing="xs">
-                <Anchor component={Link} to={"/users/" + item.recommendedBy.id}>
+                <Anchor
+                  component={Link}
+                  to={"/user/" + item.recommendedBy.name}
+                >
                   <Group spacing="xs">
-                    <Avatar radius="xl" />
+                    <UserAvatar radius="xl" user={item.recommendedBy} />
                     <Text color={theme.colors.gray[4]}>
                       {item.recommendedBy.name}
                     </Text>

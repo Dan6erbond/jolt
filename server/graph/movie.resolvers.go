@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/pkg/models"
@@ -83,9 +84,23 @@ func (r *movieResolver) UserReview(ctx context.Context, obj *models.Movie) (*mod
 	return &reviews[0], nil
 }
 
-// AvailableOnJellyfin is the resolver for the availableOnJellyfin field.
-func (r *movieResolver) AvailableOnJellyfin(ctx context.Context, obj *models.Movie) (bool, error) {
-	panic(fmt.Errorf("not implemented: AvailableOnJellyfin - availableOnJellyfin"))
+// JellyfinURL is the resolver for the jellyfinUrl field.
+func (r *movieResolver) JellyfinURL(ctx context.Context, obj *models.Movie) (*string, error) {
+	if obj.JellyfinID == "" {
+		//nolint:nilnil
+		return nil, nil
+	}
+
+	u, err := r.jellyfinClient.GetURL("")
+
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: make this cleaner
+	jellyfinURL := u.String() + fmt.Sprintf("/web/index.html#!/details?id=%s&serverId=%s", obj.JellyfinID, obj.JellyfinServerID)
+
+	return &jellyfinURL, nil
 }
 
 // Genres is the resolver for the genres field.
@@ -108,6 +123,29 @@ func (r *movieResolver) Watched(ctx context.Context, obj *models.Movie) (bool, e
 	}
 
 	return true, nil
+}
+
+// WatchedOn is the resolver for the watchedOn field.
+func (r *movieResolver) WatchedOn(ctx context.Context, obj *models.Movie) (*time.Time, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var watched []models.Watched
+	err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "movies", obj.ID).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(watched) == 0 {
+		//nolint:nilnil
+		return nil, nil
+	}
+
+	return &watched[0].CreatedAt, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.
@@ -135,7 +173,7 @@ func (r *mutationResolver) RateMovie(ctx context.Context, tmdbID string, rating 
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -164,7 +202,7 @@ func (r *mutationResolver) ReviewMovie(ctx context.Context, tmdbID string, revie
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -202,7 +240,7 @@ func (r *queryResolver) Movie(ctx context.Context, id *string, tmdbID *string) (
 		return nil, err
 	}
 
-	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId), true)
+	movie, err := r.movieService.GetOrCreateMovieByTmdbID(int(tmdbId))
 	if err != nil {
 		return nil, err
 	}

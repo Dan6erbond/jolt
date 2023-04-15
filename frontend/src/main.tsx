@@ -13,6 +13,8 @@ import Movie from "./pages/movies/[movieId]";
 import Recommendations from "./pages/recommendations";
 import Search from "./pages/search";
 import Tv from "./pages/tv/[tvId]";
+import User from "./pages/users/[name]";
+import Watched from "./pages/watched";
 import Watchlist from "./pages/watchlist";
 import "./styles/main.css";
 import { client } from "./utils/apolloClient";
@@ -44,12 +46,20 @@ const router = createBrowserRouter([
         children: [{ path: ":tvId", element: <Tv /> }],
       },
       {
+        path: "user",
+        children: [{ path: ":name", element: <User /> }],
+      },
+      {
         path: "search",
         element: <Search />,
       },
       {
         path: "watchlist",
         element: <Watchlist />,
+      },
+      {
+        path: "watched",
+        element: <Watched />,
       },
       {
         path: "recommendations",

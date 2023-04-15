@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dan6erbond/jolt-server/graph/generated"
 	"github.com/dan6erbond/jolt-server/pkg/models"
@@ -21,7 +22,7 @@ func (r *mutationResolver) RateTv(ctx context.Context, tmdbID string, rating flo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 
 	if err != nil {
 		return nil, err
@@ -62,20 +63,18 @@ func (r *mutationResolver) ReviewTv(ctx context.Context, tmdbID string, review s
 // Tv is the resolver for the tv field.
 func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*models.Tv, error) {
 	if id != nil {
-		var tv models.Tv
-
 		//nolint:revive
-		dbID, err := strconv.ParseInt(*tmdbID, 10, 64)
+		dbID, err := strconv.ParseInt(*id, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 
-		err = r.db.First(&tv, dbID).Error
+		tv, err := r.tvService.GetOrCreateTvByID(uint(dbID))
 		if err != nil {
 			return nil, err
 		}
 
-		return &tv, nil
+		return tv, nil
 	}
 
 	if tmdbID == nil {
@@ -88,7 +87,7 @@ func (r *queryResolver) Tv(ctx context.Context, id *string, tmdbID *string) (*mo
 		return nil, err
 	}
 
-	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId), true)
+	tv, err := r.tvService.GetOrCreateTvByTmdbID(int(tmdbId))
 	if err != nil {
 		return nil, err
 	}
@@ -180,17 +179,40 @@ func (r *tvResolver) Genres(ctx context.Context, obj *models.Tv) ([]string, erro
 func (r *tvResolver) Watched(ctx context.Context, obj *models.Tv) (bool, error) {
 	user, err := r.authService.GetUser(ctx)
 
-	watchedCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Count()
-
 	if err != nil {
 		return false, err
 	}
+
+	watchedCount := r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Count()
 
 	if watchedCount == 0 {
 		return false, nil
 	}
 
 	return true, nil
+}
+
+// WatchedOn is the resolver for the watchedOn field.
+func (r *tvResolver) WatchedOn(ctx context.Context, obj *models.Tv) (*time.Time, error) {
+	user, err := r.authService.GetUser(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var watched []models.Watched
+	err = r.db.Model(&user).Where("media_type = ? AND media_id = ?", "tvs", obj.ID).Association("Watched").Find(&watched)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(watched) == 0 {
+		//nolint:nilnil
+		return nil, nil
+	}
+
+	return &watched[0].CreatedAt, nil
 }
 
 // AddedToWatchlist is the resolver for the addedToWatchlist field.

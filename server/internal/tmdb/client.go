@@ -135,6 +135,22 @@ func (tmdbClient *Client) MovieReleaseDates(id string) (*MovieReleaseDates, erro
 	return &result, nil
 }
 
+func (tmdbClient *Client) MovieRecommendations(id string) (*MovieRecommendations, error) {
+	u, _, err := tmdbClient.GetURL("/movie/" + id + "/recommendations")
+	if err != nil {
+		return nil, err
+	}
+
+	var result MovieRecommendations
+
+	err = tmdbClient.DoRequest(u, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
 func (tmdbClient *Client) Tv(id string) (*Tv, error) {
 	u, _, err := tmdbClient.GetURL("/tv/" + id)
 	if err != nil {
@@ -151,13 +167,13 @@ func (tmdbClient *Client) Tv(id string) (*Tv, error) {
 	return &result, nil
 }
 
-func (tmdbClient *Client) MovieRecommendations(id string) (*MovieRecommendations, error) {
-	u, _, err := tmdbClient.GetURL("/movie/" + id + "/recommendations")
+func (tmdbClient *Client) TvSeason(tvID string, seasonNumber uint) (*TvSeason, error) {
+	u, _, err := tmdbClient.GetURL("/tv/" + tvID + "/season/" + fmt.Sprint(seasonNumber))
 	if err != nil {
 		return nil, err
 	}
 
-	var result MovieRecommendations
+	var result TvSeason
 
 	err = tmdbClient.DoRequest(u, &result)
 	if err != nil {

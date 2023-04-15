@@ -13,8 +13,8 @@ import (
 	zapgorm "moul.io/zapgorm2"
 )
 
-func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
-	dsn := fmt.Sprintf(
+func GetDsn() string {
+	return fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s",
 		viper.GetString("db.host"),
 		viper.GetString("db.user"),
@@ -23,10 +23,13 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 		viper.GetInt("db.port"),
 		viper.GetString("db.sslmode"),
 	)
+}
+
+func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 	log := zapgorm.New(logger)
 	log.SetAsDefault()
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(GetDsn()), &gorm.Config{
 		Logger: log,
 	})
 	if err != nil {
@@ -48,6 +51,12 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 			if err := db.AutoMigrate(&models.Tv{}); err != nil {
 				logger.Error(err.Error())
 			}
+			if err := db.AutoMigrate(&models.Season{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Episode{}); err != nil {
+				logger.Error(err.Error())
+			}
 			if err := db.AutoMigrate(&models.Review{}); err != nil {
 				logger.Error(err.Error())
 			}
@@ -58,6 +67,9 @@ func NewDb(lc fx.Lifecycle, logger *zap.Logger) *gorm.DB {
 				logger.Error(err.Error())
 			}
 			if err := db.AutoMigrate(&models.Recommendation{}); err != nil {
+				logger.Error(err.Error())
+			}
+			if err := db.AutoMigrate(&models.Follower{}); err != nil {
 				logger.Error(err.Error())
 			}
 			return nil
