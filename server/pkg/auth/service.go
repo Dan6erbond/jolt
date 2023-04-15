@@ -111,7 +111,7 @@ func (as *Service) ValidateRefreshToken(token *jwt.Token) (valid bool, err error
 
 		var refreshToken models.RefreshToken
 
-		err = as.db.First(&refreshToken, "id = ?", refreshTokenClaims.ID).Error
+		err = as.db.First(&refreshToken, refreshTokenClaims.ID).Error
 		if err != nil {
 			return false, err
 		}
