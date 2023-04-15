@@ -16,9 +16,9 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Link } from "react-router-dom";
-import RecommendationCard from "../components/recommendationCard";
-import ReviewCard from "../components/reviewCard";
-import UserAvatar from "../components/userAvatar";
+import RecommendationCard from "../components/feed/recommendationCard";
+import ReviewCard from "../components/profile/reviewCard";
+import UserAvatar from "../components/user/userAvatar";
 import { graphql } from "../gql";
 
 const LegacyFeed = () => {

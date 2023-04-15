@@ -2,7 +2,7 @@ import { useQuery } from "@apollo/client";
 import { Box, Group, Space, Stack, Title } from "@mantine/core";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import { graphql } from "../gql";
-import MediaCard from "../components/mediaCard";
+import MediaCard from "../components/media/mediaCard";
 
 const Watchlist = () => {
   const { data } = useQuery(

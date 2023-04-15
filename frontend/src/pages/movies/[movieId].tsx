@@ -12,7 +12,6 @@ import {
   Modal,
   Rating,
   Select,
-  Skeleton,
   Space,
   Stack,
   Tabs,
@@ -33,10 +32,11 @@ import {
 } from "@tabler/icons";
 import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router-dom";
-import Poster from "../../components/poster";
-import UserAvatar from "../../components/userAvatar";
-import { UserSelectItem } from "../../components/userSelectItem";
+import Poster from "../../components/media/poster";
+import UserAvatar from "../../components/user/userAvatar";
+import { UserSelectItem } from "../../components/user/userSelectItem";
 import { graphql } from "../../gql";
+import ReviewCard from "../../components/media/reviewCard";
 
 const Movie = () => {
   const { movieId } = useParams();
@@ -75,6 +75,7 @@ const Movie = () => {
           reviews {
             id
             review
+            rating
             createdBy {
               id
               profileImageUrl
@@ -541,22 +542,7 @@ const Movie = () => {
               {data?.movie.reviews
                 .filter((review) => review.createdBy.id !== myIdData?.me.id)
                 .map((review) => (
-                  <Box key={review.id}>
-                    <Group>
-                      <Stack sx={{ flex: 1 }}>
-                        <Text color="white" sx={{ wordWrap: "normal" }}>
-                          {review.review}
-                        </Text>
-                        <Group>
-                          <Rating value={2} readOnly />
-                          <UserAvatar radius="xl" user={review.createdBy} />
-                          <Text color="white">{review.createdBy.name}</Text>
-                        </Group>
-                      </Stack>
-                    </Group>
-                    <Space h="sm" />
-                    <Divider size="sm" color={theme.colors.dark[3]} />
-                  </Box>
+                  <ReviewCard key={review.id} review={review} />
                 ))}
             </Stack>
           </Stack>

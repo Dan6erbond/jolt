@@ -44,8 +44,8 @@ import {
 import { graphql } from "../../gql";
 import { useSearch } from "../../hooks/useSearch";
 import { accessToken, loggedIn, sessionError } from "../../utils/apolloClient";
-import Poster from "../poster";
-import UserAvatar from "../userAvatar";
+import Poster from "../media/poster";
+import UserAvatar from "../user/userAvatar";
 
 interface SearchResultItemProps extends Omit<LinkProps, "to"> {
   item:

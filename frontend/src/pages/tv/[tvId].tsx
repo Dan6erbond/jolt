@@ -4,14 +4,11 @@ import {
   Box,
   Button,
   Card,
-  Divider,
   Flex,
   Group,
   Image,
   Modal,
   Rating,
-  Select,
-  Skeleton,
   Space,
   Stack,
   Tabs,
@@ -22,7 +19,6 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import {
-  IconChevronDown,
   IconClockHour4,
   IconEyeCheck,
   IconMessage2,
@@ -32,9 +28,9 @@ import {
 } from "@tabler/icons";
 import { useEffect, useState } from "react";
 import { Form, useParams } from "react-router-dom";
-import Poster from "../../components/poster";
-import UserAvatar from "../../components/userAvatar";
-import { UserSelectItem } from "../../components/userSelectItem";
+import Poster from "../../components/media/poster";
+import ReviewCard from "../../components/media/reviewCard";
+import UserSelect from "../../components/user/userSelect";
 import { graphql } from "../../gql";
 
 const Tv = () => {
@@ -73,6 +69,7 @@ const Tv = () => {
           reviews {
             id
             review
+            rating
             createdBy {
               id
               profileImageUrl
@@ -274,32 +271,14 @@ const Tv = () => {
           </Flex>
           <Form onSubmit={submitRecommendation}>
             <Stack>
-              <Select
-                data={
-                  usersData?.users
-                    .filter((user) => user.id !== myIdData?.me.id)
-                    .map((user) => ({
-                      ...user,
-                      value: user.id,
-                      label: user.name,
-                    })) || []
+              <UserSelect
+                users={
+                  usersData?.users.filter(
+                    (user) => user.id !== myIdData?.me.id,
+                  ) || []
                 }
-                searchable
-                styles={{
-                  input: {
-                    border: `1px solid ${theme.colors.dark[1]}`,
-                    color: "white",
-                    "::placeholder": { color: theme.colors.gray[4] },
-                  },
-                  dropdown: {
-                    color: theme.colors.gray[4],
-                  },
-                }}
                 value={recommendUserId}
                 onChange={setRecommendUserId}
-                itemComponent={UserSelectItem}
-                rightSection={<IconChevronDown size={14} />}
-                rightSectionWidth={30}
               />
               <Textarea
                 label="Tell them your thoughts"
@@ -367,7 +346,7 @@ const Tv = () => {
         {data?.tv && (
           <Box>
             <Stack p="md" spacing="sm">
-              <Flex align="end" gap="md">
+              <Flex align="end" gap="md" wrap="wrap">
                 <Poster model={data?.tv} size="sm" />
                 <Stack spacing="xs">
                   <Title color="white">
@@ -515,22 +494,7 @@ const Tv = () => {
               {data?.tv.reviews
                 .filter((review) => review.createdBy.id !== myIdData?.me.id)
                 .map((review) => (
-                  <Box key={review.id}>
-                    <Group>
-                      <Stack sx={{ flex: 1 }}>
-                        <Text color="white" sx={{ wordWrap: "normal" }}>
-                          {review.review}
-                        </Text>
-                        <Group>
-                          <Rating value={2} readOnly />
-                          <UserAvatar radius="xl" user={review.createdBy} />
-                          <Text color="white">{review.createdBy.name}</Text>
-                        </Group>
-                      </Stack>
-                    </Group>
-                    <Space h="sm" />
-                    <Divider size="sm" color={theme.colors.dark[3]} />
-                  </Box>
+                  <ReviewCard key={review.id} review={review} />
                 ))}
             </Stack>
           </Stack>

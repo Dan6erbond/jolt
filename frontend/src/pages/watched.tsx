@@ -1,7 +1,7 @@
 import { useQuery } from "@apollo/client";
 import { Box, Group, Space, Stack, Title } from "@mantine/core";
 import { TbEyeCheck } from "react-icons/tb";
-import MediaCard from "../components/mediaCard";
+import MediaCard from "../components/media/mediaCard";
 import { graphql } from "../gql";
 
 const Watched = () => {

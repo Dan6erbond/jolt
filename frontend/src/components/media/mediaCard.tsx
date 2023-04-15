@@ -19,7 +19,7 @@ import {
 } from "@tabler/icons";
 import { TbEyeCheck } from "react-icons/tb";
 import { Link } from "react-router-dom";
-import Poster from "../components/poster";
+import Poster from "./poster";
 
 interface MediaCardProps {
   media:

@@ -11,8 +11,8 @@ import {
 } from "@mantine/core";
 import { IconBolt, IconCircleChevronRight } from "@tabler/icons";
 import { Link } from "react-router-dom";
-import Poster from "../components/poster";
-import UserAvatar from "./userAvatar";
+import Poster from "../media/poster";
+import UserAvatar from "../user/userAvatar";
 
 interface RecommendationCardProps {
   recommendation: {

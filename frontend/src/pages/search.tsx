@@ -12,8 +12,8 @@ import {
 import { IconCircleChevronRight } from "@tabler/icons";
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import Poster from "../components/poster";
-import UserAvatar from "../components/userAvatar";
+import Poster from "../components/media/poster";
+import UserAvatar from "../components/user/userAvatar";
 import { useSearch } from "../hooks/useSearch";
 
 const Search = () => {

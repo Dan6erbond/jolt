@@ -1,6 +1,6 @@
 import { Group, Text } from "@mantine/core";
 import { forwardRef } from "react";
-import UserAvatar from "./userAvatar";
+import UserAvatar from "../user/userAvatar";
 
 interface ItemProps extends React.ComponentPropsWithoutRef<"div"> {
   __typename?: "User";

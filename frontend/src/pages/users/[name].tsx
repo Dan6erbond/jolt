@@ -15,8 +15,8 @@ import {
 } from "@mantine/core";
 import { IconEye, IconMessage2, IconStar } from "@tabler/icons";
 import { useParams } from "react-router-dom";
-import Poster from "../../components/poster";
-import UserAvatar from "../../components/userAvatar";
+import Poster from "../../components/media/poster";
+import UserAvatar from "../../components/user/userAvatar";
 import { graphql } from "../../gql";
 
 const User = () => {
