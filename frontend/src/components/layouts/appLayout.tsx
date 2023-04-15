@@ -1,4 +1,4 @@
-import { useQuery, useReactiveVar } from "@apollo/client";
+import { useApolloClient, useQuery, useReactiveVar } from "@apollo/client";
 import {
   Anchor,
   AppShell,
@@ -21,6 +21,8 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { getHotkeyHandler, useDebouncedValue } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { IconMoodSad2 } from "@tabler/icons";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import { AiOutlineFieldTime } from "react-icons/ai";
 import {
@@ -140,6 +142,7 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useMantineTheme();
+  const client = useApolloClient();
 
   const [opened, setOpened] = useState(false);
 
@@ -163,6 +166,15 @@ const AppLayout = () => {
 
   useEffect(() => {
     if (_sessionError === "REFRESH_TOKEN_EXPIRED" || !_loggedIn) {
+      notifications.show({
+        title: "Authentication error",
+        message: "You have been logged out, please sign in again",
+        color: "red",
+        icon: <IconMoodSad2 />,
+        styles: { description: { color: "white" } },
+      });
+      client.resetStore();
+      sessionError(null);
       navigate("/login");
     }
   }, [_sessionError, _loggedIn]);

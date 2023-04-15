@@ -2,6 +2,7 @@ import { ApolloProvider } from "@apollo/client";
 import "@fontsource/nunito";
 import "@fontsource/righteous";
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import AppLayout from "./components/layouts/appLayout";
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <ApolloProvider client={client}>
     <MantineProvider withGlobalStyles withNormalizeCSS theme={theme}>
+      <Notifications />
       <RouterProvider router={router} />
     </MantineProvider>
   </ApolloProvider>,

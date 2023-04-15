@@ -28,6 +28,7 @@ const refreshTokenErrors = [
   "token expired or inactive",
   "couldn't parse token",
   "couldn't parse token claims",
+  "refresh token not found",
 ];
 
 const authLink = setContext(async (_, { headers }) => {
@@ -59,8 +60,8 @@ const authLink = setContext(async (_, { headers }) => {
         refreshTokenErrors.includes(errors?.[0].message)
       ) {
         localStorage.removeItem("refreshToken");
+        accessToken(null);
         sessionError("REFRESH_TOKEN_EXPIRED");
-        console.log("REFRESH_TOKEN_EXPIRED");
         refreshingTokens(false);
       }
       if (data) {
@@ -97,8 +98,9 @@ const errorLink = onError(
         refreshTokenErrors.includes(graphQLErrors[0].message)
       ) {
         localStorage.removeItem("refreshToken");
-        sessionError("REFRESH_TOKEN_EXPIRED");
+        accessToken(null);
         refreshingTokens(false);
+        sessionError("REFRESH_TOKEN_EXPIRED");
       }
       graphQLErrors.forEach(({ message, locations, path }) =>
         console.error(
