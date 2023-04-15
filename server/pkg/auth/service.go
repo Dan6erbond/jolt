@@ -34,7 +34,7 @@ func (as *Service) GenerateAccessToken(user models.User) (*jwt.Token, error) {
 		user.Name,
 		jwt.StandardClaims{
 			ExpiresAt: accessTokenExpiry,
-			Issuer:    "dikurium.ch",
+			Issuer:    "jolt.com",
 		},
 	}
 
@@ -45,7 +45,7 @@ func (as *Service) GenerateAccessToken(user models.User) (*jwt.Token, error) {
 
 func (as *Service) GenerateRefreshToken(user models.User) (*jwt.Token, error) {
 	refreshTokenExpiresAt := time.Now().Add(RefreshTokenValidity)
-	dbRefreshToken := &models.RefreshToken{ExpiresAt: refreshTokenExpiresAt, Revoked: false, UserID: 1}
+	dbRefreshToken := &models.RefreshToken{ExpiresAt: refreshTokenExpiresAt, Revoked: false, UserID: user.ID}
 	tx := as.db.Create(dbRefreshToken)
 
 	if tx.Error != nil {
@@ -56,7 +56,7 @@ func (as *Service) GenerateRefreshToken(user models.User) (*jwt.Token, error) {
 		int(dbRefreshToken.ID),
 		jwt.StandardClaims{
 			ExpiresAt: refreshTokenExpiresAt.Unix(),
-			Issuer:    "dikurium.ch",
+			Issuer:    "jolt.com",
 		},
 	}
 
