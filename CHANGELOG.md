@@ -1,3 +1,12 @@
+# [0.5.0](https://github.com/Dan6erbond/jolt/compare/v0.4.0...v0.5.0) (2023-04-15)
+
+
+### Features
+
+* testing ci ([fe2e9d5](https://github.com/Dan6erbond/jolt/commit/fe2e9d5083eae4c2e4e4d17359e2d80be551d1f2))
+
+
+
 # [0.4.0](https://github.com/Dan6erbond/jolt/compare/v0.3.0...v0.4.0) (2023-04-15)
 
 
@@ -74,28 +83,6 @@
 * :zap: improve movie discovery performance with goroutines to fetch movie data ([57e7dbc](https://github.com/Dan6erbond/jolt/commit/57e7dbcc1921bfa3665c115f8d4b7da88ab9f158))
 * :zap: improve search performance with goroutines for fetching media data ([e30b690](https://github.com/Dan6erbond/jolt/commit/e30b690b4244b7de8e685f4db8dc071974adf2c0))
 * :zap: use reference instead of new value ([c72bc0d](https://github.com/Dan6erbond/jolt/commit/c72bc0dd45811a2f1dbbfa764694f45c28e5bb7c))
-
-
-
-# [0.1.0](https://github.com/Dan6erbond/jolt/compare/v0.1.0-prerelease...v0.1.0) (2023-04-08)
-
-
-### Bug Fixes
-
-* :bug: fix updated props for modal overlay ([0b05c35](https://github.com/Dan6erbond/jolt/commit/0b05c35679f4440ba14700ac4554437b539d1be4))
-
-
-### Features
-
-* :sparkles: add argument for sync with tmdb ([a8edc68](https://github.com/Dan6erbond/jolt/commit/a8edc685baff297ded050ffa8adfd2568bb6f8c0))
-* :sparkles: implement frontend watched functionality ([593e712](https://github.com/Dan6erbond/jolt/commit/593e7124d65e5d32f1a2ae50b82258703ed6496e))
-* :sparkles: implement movie suggestions using tmdb recommend movies with scoring algorithm ([0094e7d](https://github.com/Dan6erbond/jolt/commit/0094e7de5839f125b7fb5d40499f0b173844ecbb))
-* :sparkles: implement movie watched functionality ([8f4c094](https://github.com/Dan6erbond/jolt/commit/8f4c094bc1d8d852b6ae6d67003c6bd232d06070))
-* :sparkles: implement tv watched functionality ([a6104c9](https://github.com/Dan6erbond/jolt/commit/a6104c9cb4b9beaa6e8cf99d4c444ee0c2a522eb))
-* :sparkles: load movie suggestions on discovery page and display in carousel ([2985438](https://github.com/Dan6erbond/jolt/commit/29854387d0902dd16ee47e2587da4823d0332c5a))
-* :sparkles: refactor reviews and ratings to `ReviewService` and fix other linter errors ([8a28fac](https://github.com/Dan6erbond/jolt/commit/8a28fac2738606786c98bb097924195e47887f66))
-* :sparkles: show no results found for profiles ([bfb68d0](https://github.com/Dan6erbond/jolt/commit/bfb68d02e665b07482981fe8096bbee12c00c676))
-* :zap: improve performance by using count instead of fetching all watched values ([526b00f](https://github.com/Dan6erbond/jolt/commit/526b00f2a9659413b4c027cdeb99ff234f3293df))
 
 
 
