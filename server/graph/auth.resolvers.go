@@ -77,6 +77,7 @@ func (r *mutationResolver) RefreshTokens(ctx context.Context, refreshToken strin
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("refresh token not found")
 		}
+
 		return nil, err
 	}
 
