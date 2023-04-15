@@ -1,4 +1,4 @@
-name: Bump version, tag commit and generate changelog with conventional commits
+name: Bump version, create release and build Docker image
 
 on:
   push:
@@ -13,8 +13,8 @@ jobs:
   tag-and-generate-changelog:
     runs-on: ubuntu-latest
     outputs:
-      changelog: ${{ steps.changelog.changelog }}
-      tag: ${{ steps.changelog.tag }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      tag: ${{ steps.changelog.outputs.tag }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
