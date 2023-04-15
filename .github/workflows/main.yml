@@ -42,15 +42,20 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Lowercase package
-        id: tags
+        id: tags1
         uses: ASzc/change-string-case-action@v1
         with:
           string: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.changelog.outputs.tag }}
+      - name: Lowercase package
+        id: tags2
+        uses: ASzc/change-string-case-action@v1
+        with:
+          string: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         with:
           context: .
           push: true
-          tags: ${{ steps.tags.outputs.lowercase }}
+          tags: ${{ steps.tags1.outputs.lowercase }},${{ steps.tags2.outputs.lowercase }}
           labels: ${{ steps.meta.outputs.labels }}
