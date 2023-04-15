@@ -1,3 +1,12 @@
+## [0.6.1](https://github.com/Dan6erbond/jolt/compare/v0.6.0...v0.6.1) (2023-04-15)
+
+
+### Bug Fixes
+
+* :green_heart: push to latest in main pipeline ([c4947f8](https://github.com/Dan6erbond/jolt/commit/c4947f8c3aa17a6586665aea51605e87cd27e87c))
+
+
+
 # [0.6.0](https://github.com/Dan6erbond/jolt/compare/v0.5.2...v0.6.0) (2023-04-15)
 
 
@@ -32,15 +41,6 @@
 ### Features
 
 * testing ci ([fe2e9d5](https://github.com/Dan6erbond/jolt/commit/fe2e9d5083eae4c2e4e4d17359e2d80be551d1f2))
-
-
-
-# [0.4.0](https://github.com/Dan6erbond/jolt/compare/v0.3.0...v0.4.0) (2023-04-15)
-
-
-### Features
-
-* testing ci ([9a218b5](https://github.com/Dan6erbond/jolt/commit/9a218b52d756218670b64e6ffb15bca8043cca92))
 
 
 
