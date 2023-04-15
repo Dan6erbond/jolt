@@ -153,27 +153,33 @@ const Movie = () => {
 
   const submitRecommendation = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    client.mutate({
-      mutation: graphql(`
-        mutation RecommendMovie($tmdbId: ID!, $userId: ID!, $message: String!) {
-          createRecommendation(
-            input: {
-              tmdbId: $tmdbId
-              mediaType: MOVIE
-              recommendationForUserId: $userId
-              message: $message
-            }
+    client
+      .mutate({
+        mutation: graphql(`
+          mutation RecommendMovie(
+            $tmdbId: ID!
+            $userId: ID!
+            $message: String!
           ) {
-            id
+            createRecommendation(
+              input: {
+                tmdbId: $tmdbId
+                mediaType: MOVIE
+                recommendationForUserId: $userId
+                message: $message
+              }
+            ) {
+              id
+            }
           }
-        }
-      `),
-      variables: {
-        message: recommendationMessage,
-        tmdbId: movieId!,
-        userId: recommendUserId!,
-      },
-    });
+        `),
+        variables: {
+          message: recommendationMessage,
+          tmdbId: movieId!,
+          userId: recommendUserId!,
+        },
+      })
+      .then(() => setShowRecommendationModal(false));
   };
 
   const toggleWatchlist = () => {
